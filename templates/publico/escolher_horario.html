@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block titulo %}Escolher horário — {{ profissional.nome_publico }}{% endblock %}
+{% block classe_main %}container py-4 py-md-5{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-9 col-lg-7">
+
+        <a href="{% url 'publico_servico' profissional.slug %}"
+           class="btn btn-sm btn-link ps-0 mb-2 text-decoration-none">
+            <i class="bi bi-chevron-left"></i> Trocar de serviço
+        </a>
+
+        <div class="cartao p-3 mb-4">
+            <div class="fw-semibold">{{ servico.nome }}</div>
+            <div class="small text-muted">
+                {{ servico.duracao_minutos }} minutos
+                {% if servico.preco %} · R$ {{ servico.preco }}{% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="passo-numero">2</span>
+            <span class="fw-semibold">Escolha o dia</span>
+        </div>
+
+        {% if dias %}
+            <div class="regua-dias mb-4">
+                {% for dia, lista in dias %}
+                <a href="?dia={{ dia|date:'Y-m-d' }}"
+                   class="cartao cartao-dia {% if dia == dia_selecionado %}selecionado{% endif %}">
+                    <div class="dia-semana text-uppercase">{{ dia|date:"D" }}</div>
+                    <div class="dia-numero">{{ dia|date:"d" }}</div>
+                    <div class="dia-mes">{{ dia|date:"M" }}</div>
+                </a>
+                {% endfor %}
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="passo-numero">3</span>
+                <span class="fw-semibold">Escolha o horário</span>
+            </div>
+
+            {% if horarios %}
+                <form method="post"
+                      action="{% url 'publico_confirmar' profissional.slug servico.pk %}">
+                    {% csrf_token %}
+
+                    <div class="grade-horarios mb-4">
+                        {% for h in horarios %}
+                        <div>
+                            <input type="radio" name="inicio" id="h{{ forloop.counter }}"
+                                   value="{{ h|date:'Y-m-d H:i:s' }}"
+                                   {% if forloop.first %}checked{% endif %}>
+                            <label for="h{{ forloop.counter }}">{{ h|date:"H:i" }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-principal w-100 py-2">
+                        Continuar
+                    </button>
+                </form>
+            {% else %}
+                <div class="cartao p-4 text-center text-muted">
+                    Não há horários livres neste dia. Escolha outra data acima.
+                </div>
+            {% endif %}
+
+        {% else %}
+            <div class="cartao p-5 text-center text-muted">
+                Não há horários disponíveis no momento.
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

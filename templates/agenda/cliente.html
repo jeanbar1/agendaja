@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block titulo %}Clientes — AgendaJá{% endblock %}
+
+{% block conteudo %}
+<h1 class="h3 mb-4">Clientes</h1>
+
+<div class="cartao p-3 mb-4">
+    <form method="get" class="row g-2">
+        <div class="col-9 col-md-6">
+            <input type="text" name="busca" class="form-control form-control-sm"
+                   placeholder="Buscar por nome" value="{{ busca }}">
+        </div>
+        <div class="col-3 col-md-2">
+            <button type="submit" class="btn btn-principal btn-sm w-100">Buscar</button>
+        </div>
+    </form>
+</div>
+
+<div class="cartao">
+    {% if clientes %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th class="d-none d-md-table-cell">Cadastro</th>
+                    <th class="text-end">Mensagens</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in clientes %}
+                <tr>
+                    <td class="fw-semibold">{{ c.nome }}</td>
+                    <td>{{ c.telefone }}</td>
+                    <td class="d-none d-md-table-cell small text-muted">
+                        {{ c.criado_em|date:"d/m/Y" }}
+                    </td>
+                    <td class="text-end">
+                        {% if c.pode_receber_mensagem %}
+                            <span class="selo selo-confirmado">autorizado</span>
+                        {% else %}
+                            <span class="selo selo-cancelado">sem consentimento</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div class="p-5 text-center text-muted">Nenhum cliente encontrado.</div>
+    {% endif %}
+</div>
+
+<p class="small text-muted mt-3">
+    O consentimento é exigido pela LGPD e pela política da Meta: sem ele o
+    sistema não envia mensagem pelo WhatsApp.
+</p>
+{% endblock %}

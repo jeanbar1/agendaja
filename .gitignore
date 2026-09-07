@@ -1,0 +1,42 @@
+# Segredos — NUNCA vão para o repositório
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+
+# Django
+*.log
+db.sqlite3
+/media/
+/staticfiles/
+
+# Docker (Evolution API)
+postgres_data/
+redis_data/
+evolution_instances/
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# Sistema
+.DS_Store
+
+# Arquivos grandes / instaladores
+*.exe
+*.zip
+
+# Testes
+.coverage
+htmlcov/
+.pytest_cache/

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block titulo %}Cancelar agendamento{% endblock %}
+{% block classe_main %}container py-4 py-md-5{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-5">
+        <div class="cartao p-4 p-md-5 text-center">
+
+            <i class="bi bi-exclamation-triangle icone-estado icone-alerta"></i>
+            <h1 class="h5 mt-3">Cancelar este agendamento?</h1>
+
+            <div class="text-start cartao caixa-destaque p-3 my-4">
+                <div class="fw-semibold">{{ agendamento.servico.nome }}</div>
+                <div class="small text-muted">
+                    {{ agendamento.inicio|date:"d/m/Y" }} às {{ agendamento.inicio|date:"H:i" }}
+                    · {{ agendamento.profissional.nome_publico }}
+                </div>
+            </div>
+
+            <p class="small text-muted">
+                O horário fica disponível para outra pessoa e não dá para desfazer.
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-danger">Sim, cancelar</button>
+                    <a href="{% url 'publico_sucesso' agendamento.codigo %}"
+                       class="btn btn-outline-secondary">Voltar</a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

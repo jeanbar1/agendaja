@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block titulo %}Agendar com {{ profissional.nome_publico }}{% endblock %}
+{% block classe_main %}container py-4 py-md-5{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-9 col-lg-7">
+
+        <div class="text-center mb-4">
+            <h1 class="h3 mb-1">{{ profissional.nome_publico }}</h1>
+            <p class="text-muted mb-0">{{ profissional.area.nome }}</p>
+            {% if profissional.apresentacao %}
+                <p class="small text-muted mt-2 mb-0">{{ profissional.apresentacao }}</p>
+            {% endif %}
+        </div>
+
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="passo-numero">1</span>
+            <span class="fw-semibold">Escolha o serviço</span>
+        </div>
+
+        {% if servicos %}
+            <div class="d-grid gap-2">
+                {% for s in servicos %}
+                <a href="{% url 'publico_horario' profissional.slug s.pk %}"
+                   class="cartao cartao-servico p-3">
+                    <div class="d-flex justify-content-between align-items-center gap-3">
+                        <div>
+                            <div class="fw-semibold">{{ s.nome }}</div>
+                            <div class="small text-muted">
+                                {{ s.duracao_minutos }} minutos
+                                {% if s.modalidade != 'presencial' %}
+                                    · {{ s.get_modalidade_display }}
+                                {% endif %}
+                            </div>
+                            {% if s.descricao %}
+                                <div class="small text-muted mt-1">{{ s.descricao }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="text-end text-nowrap">
+                            {% if s.preco %}
+                                <div class="fw-semibold">R$ {{ s.preco }}</div>
+                            {% endif %}
+                            <i class="bi bi-chevron-right text-muted"></i>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="cartao p-5 text-center text-muted">
+                Este profissional ainda não publicou serviços para agendamento.
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

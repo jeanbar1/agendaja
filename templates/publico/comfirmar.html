@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block titulo %}Confirmar agendamento — {{ profissional.nome_publico }}{% endblock %}
+{% block classe_main %}container py-4 py-md-5{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-9 col-lg-6">
+
+        <a href="{% url 'publico_horario' profissional.slug servico.pk %}?dia={{ inicio|date:'Y-m-d' }}"
+           class="btn btn-sm btn-link ps-0 mb-2 text-decoration-none">
+            <i class="bi bi-chevron-left"></i> Trocar horário
+        </a>
+
+        <div class="cartao p-4 mb-4">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="rotulo-campo">Serviço</div>
+                    <div class="fw-semibold">{{ servico.nome }}</div>
+                </div>
+                <div class="col-7">
+                    <div class="rotulo-campo">Data e hora</div>
+                    <div class="fw-semibold">
+                        {{ inicio|date:"d/m/Y" }} às {{ inicio|date:"H:i" }}
+                    </div>
+                </div>
+                <div class="col-5">
+                    <div class="rotulo-campo">Duração</div>
+                    <div class="fw-semibold">{{ servico.duracao_minutos }} min</div>
+                </div>
+                {% if servico.preco %}
+                <div class="col-12 border-top pt-3">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Valor</span>
+                        <span class="fw-semibold">R$ {{ servico.preco }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="passo-numero">4</span>
+            <span class="fw-semibold">Seus dados</span>
+        </div>
+
+        <div class="cartao p-4">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="inicio" value="{{ inicio|date:'Y-m-d H:i:s' }}">
+
+                <div class="mb-3">
+                    <label class="form-label">Nome completo</label>
+                    <input type="text" name="nome" class="form-control" required
+                           value="{{ nome|default:'' }}" placeholder="Como devemos te chamar">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">WhatsApp</label>
+                    <input type="tel" name="telefone" class="form-control" required
+                           value="{{ telefone|default:'' }}" placeholder="(77) 99999-8888">
+                    <div class="form-text">É por aqui que você recebe o lembrete.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Observações <span class="text-muted">(opcional)</span></label>
+                    <textarea name="observacoes" class="form-control" rows="2"
+                              placeholder="Algo que o profissional precise saber">{{ observacoes|default:'' }}</textarea>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" name="consentimento"
+                           id="consentimento" required>
+                    <label class="form-check-label small" for="consentimento">
+                        {{ texto_consentimento }}
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-principal w-100 py-2">
+                    Confirmar agendamento
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

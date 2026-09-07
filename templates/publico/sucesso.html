@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block titulo %}Agendamento confirmado{% endblock %}
+{% block classe_main %}container py-4 py-md-5{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-9 col-lg-6">
+
+        <div class="cartao p-4 p-md-5 text-center">
+
+            {% if agendamento.status == 'cancelado' %}
+                <i class="bi bi-x-circle icone-estado icone-neutro"></i>
+                <h1 class="h4 mt-3 mb-1">Agendamento cancelado</h1>
+                <p class="text-muted">Este horário foi liberado.</p>
+            {% else %}
+                <i class="bi bi-check-circle-fill icone-estado icone-sucesso"></i>
+                <h1 class="h4 mt-3 mb-1">Agendamento confirmado</h1>
+                <p class="text-muted">Você vai receber um lembrete pelo WhatsApp.</p>
+            {% endif %}
+
+            <div class="text-start border-top pt-4 mt-4">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="rotulo-campo">Profissional</div>
+                        <div class="fw-semibold">{{ agendamento.profissional.nome_publico }}</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="rotulo-campo">Serviço</div>
+                        <div class="fw-semibold">{{ agendamento.servico.nome }}</div>
+                    </div>
+                    <div class="col-7">
+                        <div class="rotulo-campo">Data e hora</div>
+                        <div class="fw-semibold">
+                            {{ agendamento.inicio|date:"d/m/Y" }} às {{ agendamento.inicio|date:"H:i" }}
+                        </div>
+                    </div>
+                    <div class="col-5">
+                        <div class="rotulo-campo">Situação</div>
+                        <span class="selo selo-{{ agendamento.status }}">
+                            {{ agendamento.get_status_display }}
+                        </span>
+                    </div>
+                    {% if agendamento.local %}
+                    <div class="col-12">
+                        <div class="rotulo-campo">Local</div>
+                        <div class="fw-semibold">{{ agendamento.local.nome }}</div>
+                        {% if agendamento.local.endereco %}
+                            <div class="small text-muted">{{ agendamento.local.endereco }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="border-top pt-3 mt-4">
+                <div class="rotulo-campo">Código do agendamento</div>
+                <code class="small">{{ agendamento.codigo }}</code>
+                <p class="small text-muted mt-2 mb-0">
+                    Guarde este link para consultar ou cancelar depois.
+                </p>
+            </div>
+
+            {% if agendamento.status != 'cancelado' and agendamento.status != 'concluido' %}
+            <a href="{% url 'publico_cancelar' agendamento.codigo %}"
+               class="btn btn-outline-danger btn-sm mt-4">
+                Cancelar agendamento
+            </a>
+            {% endif %}
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}

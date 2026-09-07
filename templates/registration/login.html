@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block titulo %}Entrar — AgendaJá{% endblock %}
+{% block classe_main %}container py-5{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-12 col-sm-9 col-md-6 col-lg-4">
+
+        <div class="text-center mb-4">
+            <div class="display-6 fw-bold text-marca">
+                <i class="bi bi-calendar2-check"></i> AgendaJá
+            </div>
+            <p class="text-muted mb-0">Gestão de agendamentos para profissionais autônomos</p>
+        </div>
+
+        <div class="cartao p-4">
+            {% if form.errors %}
+                <div class="alert alert-danger py-2 small">
+                    E-mail ou senha incorretos.
+                </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="id_username" class="form-label">E-mail</label>
+                    <input type="email" name="username" id="id_username"
+                           class="form-control" required autofocus
+                           placeholder="voce@exemplo.com">
+                </div>
+
+                <div class="mb-4">
+                    <label for="id_password" class="form-label">Senha</label>
+                    <input type="password" name="password" id="id_password"
+                           class="form-control" required>
+                </div>
+
+                <button type="submit" class="btn btn-principal w-100 py-2">Entrar</button>
+                <input type="hidden" name="next" value="{{ next }}">
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

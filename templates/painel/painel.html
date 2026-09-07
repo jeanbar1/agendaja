@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block titulo %}Painel — AgendaJá{% endblock %}
+
+{% block conteudo %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h1 class="h3 mb-0">{{ profissional.nome_publico }}</h1>
+        <p class="text-muted mb-0">{{ hoje|date:"l, d \d\e F \d\e Y" }}</p>
+    </div>
+    <a href="{% url 'publico_servico' profissional.slug %}" target="_blank"
+       class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-box-arrow-up-right"></i> Ver página de agendamento
+    </a>
+</div>
+
+<!-- Indicadores -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="cartao cartao-indicador p-3">
+            <div class="rotulo">Hoje</div>
+            <div class="valor">{{ total_hoje }}</div>
+            <div class="small text-muted">{{ confirmados_hoje }} confirmado{{ confirmados_hoje|pluralize }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="cartao cartao-indicador p-3">
+            <div class="rotulo">Aguardando</div>
+            <div class="valor">{{ aguardando }}</div>
+            <div class="small text-muted">pedem confirmação</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="cartao cartao-indicador p-3">
+            <div class="rotulo">Clientes</div>
+            <div class="valor">{{ total_clientes }}</div>
+            <div class="small text-muted">na sua carteira</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="cartao cartao-indicador p-3">
+            <div class="rotulo">Faltas no mês</div>
+            <div class="valor">
+                {% if indicadores.percentual is not None %}
+                    {{ indicadores.percentual }}%
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+            <div class="small text-muted">
+                {{ indicadores.faltas }} de {{ indicadores.total }} atendimento{{ indicadores.total|pluralize }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <!-- Agenda de hoje -->
+    <div class="col-12 col-lg-7">
+        <div class="cartao p-4">
+            <h2 class="h5 mb-3">Agenda de hoje</h2>
+
+            {% if agendamentos_hoje %}
+                {% for a in agendamentos_hoje %}
+                <div class="linha-horario mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <div class="fw-semibold">
+                                {{ a.inicio|date:"H:i" }} – {{ a.fim|date:"H:i" }}
+                                <span class="selo selo-{{ a.status }} ms-1">{{ a.get_status_display }}</span>
+                            </div>
+                            <div>{{ a.cliente.nome }}</div>
+                            <div class="small text-muted">
+                                {{ a.servico.nome }}
+                                {% if a.local %} · {{ a.local.nome }}{% endif %}
+                            </div>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                Situação
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'mudar_situacao' a.pk 'confirmado' %}">Confirmar</a></li>
+                                <li><a class="dropdown-item" href="{% url 'mudar_situacao' a.pk 'concluido' %}">Concluir</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'mudar_situacao' a.pk 'faltou' %}"
+                                       data-confirmar="Registrar que {{ a.cliente.nome }} não compareceu?">Registrar falta</a></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'mudar_situacao' a.pk 'cancelado' %}"
+                                       data-confirmar="Cancelar o agendamento de {{ a.cliente.nome }}?">Cancelar</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">Nenhum agendamento para hoje.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+
+        <!-- Link publico -->
+        <div class="cartao p-4 mb-4">
+            <h2 class="h6 mb-2">Seu link de agendamento</h2>
+            <p class="small text-muted">
+                Envie para os clientes ou coloque na bio das redes sociais.
+            </p>
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" id="campo-link"
+                       value="{{ link_publico }}" readonly>
+                <button class="btn btn-principal" type="button" data-copiar="campo-link">
+                    Copiar
+                </button>
+            </div>
+        </div>
+
+        <!-- Proximos -->
+        <div class="cartao p-4">
+            <h2 class="h6 mb-3">Próximos agendamentos</h2>
+            {% if proximos %}
+                <ul class="list-unstyled mb-0">
+                    {% for a in proximos %}
+                    <li class="d-flex justify-content-between align-items-center py-2
+                               {% if not forloop.last %}border-bottom{% endif %}">
+                        <div>
+                            <div class="small fw-semibold">{{ a.inicio|date:"d/m" }} às {{ a.inicio|date:"H:i" }}</div>
+                            <div class="small text-muted">{{ a.cliente.nome }} · {{ a.servico.nome }}</div>
+                        </div>
+                        <span class="selo selo-{{ a.status }}">{{ a.get_status_display }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted small mb-0">Nada agendado para os próximos dias.</p>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

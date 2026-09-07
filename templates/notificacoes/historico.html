@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block titulo %}Notificações — AgendaJá{% endblock %}
+
+{% block conteudo %}
+<h1 class="h3 mb-1">Notificações</h1>
+<p class="text-muted mb-4">
+    Mensagens enviadas e programadas para você e para os seus clientes.
+</p>
+
+{% if modo_simulacao %}
+<div class="alert alert-warning">
+    <strong>Modo de simulação.</strong>
+    Nenhum canal de envio está configurado no arquivo <code>.env</code>.
+    As mensagens são registradas como enviadas, mas não saem de fato.
+    O botão <em>Enviar</em> ao lado de cada pendência continua funcionando.
+</div>
+{% else %}
+<div class="alert alert-info py-2 small">
+    Canal ativo: <strong>{{ canal_ativo }}</strong>
+</div>
+{% endif %}
+
+<div class="cartao p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-8 col-md-4">
+            <label class="form-label small mb-1">Situação</label>
+            <select name="situacao" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for valor, rotulo in situacoes %}
+                    <option value="{{ valor }}" {% if situacao == valor %}selected{% endif %}>{{ rotulo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-4 col-md-2">
+            <button type="submit" class="btn btn-principal btn-sm w-100">Filtrar</button>
+        </div>
+        <div class="col-12 col-md-6 text-md-end">
+            <span class="small text-muted">{{ pendentes }} aguardando envio</span>
+        </div>
+    </form>
+</div>
+
+<div class="cartao">
+    {% if notificacoes %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Quando</th>
+                    <th>Destinatário</th>
+                    <th class="d-none d-md-table-cell">Tipo</th>
+                    <th>Situação</th>
+                    <th class="d-none d-lg-table-cell">Canal</th>
+                    <th class="text-end">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in notificacoes %}
+                <tr>
+                    <td class="text-nowrap">
+                        <div class="fw-semibold">{{ n.agendada_para|date:"d/m/Y" }}</div>
+                        <div class="small text-muted">{{ n.agendada_para|date:"H:i" }}</div>
+                    </td>
+                    <td>
+                        <div>
+                            {% if n.para_o_profissional %}
+                                {{ n.agendamento.profissional.nome_publico }}
+                                <span class="selo selo-concluido ms-1">você</span>
+                            {% else %}
+                                {{ n.agendamento.cliente.nome }}
+                            {% endif %}
+                        </div>
+                        <div class="small text-muted">{{ n.telefone }}</div>
+                    </td>
+                    <td class="d-none d-md-table-cell small">{{ n.get_tipo_display }}</td>
+                    <td>
+                        {% if n.situacao == 'pendente' %}
+                            <span class="selo selo-solicitado">{{ n.get_situacao_display }}</span>
+                        {% elif n.situacao == 'falhou' %}
+                            <span class="selo selo-faltou">{{ n.get_situacao_display }}</span>
+                        {% elif n.situacao == 'cancelada' %}
+                            <span class="selo selo-cancelado">{{ n.get_situacao_display }}</span>
+                        {% else %}
+                            <span class="selo selo-confirmado">{{ n.get_situacao_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="d-none d-lg-table-cell small text-muted">
+                        {{ n.get_canal_display|default:"—" }}
+                    </td>
+                    <td class="text-end">
+                        {% if n.link_manual %}
+                            <a href="{{ n.link_manual }}" target="_blank"
+                               class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-whatsapp"></i> Enviar
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if n.erro %}
+                <tr>
+                    <td colspan="6" class="small text-danger pt-0 border-0">{{ n.erro }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div class="p-5 text-center text-muted">
+            Nenhuma notificação registrada ainda.
+        </div>
+    {% endif %}
+</div>
+
+<p class="small text-muted mt-3">
+    As mensagens são disparadas pelo comando
+    <code>python manage.py enviar_lembretes</code>, executado periodicamente.
+    Só recebem mensagem os clientes com consentimento vigente. O botão
+    <em>Enviar</em> abre o WhatsApp com o texto pronto e não depende de
+    nenhum serviço externo — é o caminho garantido.
+</p>
+{% endblock %}
