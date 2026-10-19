@@ -1,68 +1,78 @@
-/* =========================================================================
-   AgendaJá — comportamentos da interface
+/* AgendaJá — comportamentos da interface.
 
-   Princípio adotado: o sistema funciona sem JavaScript. Os formulários são
-   HTML puro, a escolha de horário é um grupo de radio buttons e a navegação
-   é feita por links. O que está aqui melhora a experiência, mas nada
-   essencial depende deste arquivo.
-   ========================================================================= */
+   O sistema funciona sem JavaScript: os formulários são HTML puro, a
+   escolha de horário é um grupo de radio e a navegação é por links. O que
+   está aqui melhora a experiência, mas nada essencial depende deste
+   arquivo. */
 
 (function () {
     "use strict";
 
-    /* ---------------------------------------------------------------------
-       1. Copiar o link público de agendamento
-       --------------------------------------------------------------------- */
+    /* === Copiar o link público de agendamento ============================ */
 
     function iniciarCopiaDeLink() {
-        var botao = document.querySelector("[data-copiar]");
-        if (!botao) {
-            return;
-        }
+        var botoes = document.querySelectorAll("[data-copiar]");
 
-        botao.addEventListener("click", function () {
-            var campo = document.getElementById(botao.dataset.copiar);
-            if (!campo) {
-                return;
-            }
+        Array.prototype.forEach.call(botoes, function (botao) {
+            botao.addEventListener("click", function () {
+                var campo = document.getElementById(botao.dataset.copiar);
+                if (!campo) {
+                    return;
+                }
 
-            campo.select();
-            campo.setSelectionRange(0, 99999); // iOS
+                campo.select();
+                campo.setSelectionRange(0, 99999); // iOS
 
-            var textoOriginal = botao.textContent;
+                var textoOriginal = botao.textContent;
 
-            function avisar(mensagem) {
-                botao.textContent = mensagem;
-                setTimeout(function () {
-                    botao.textContent = textoOriginal;
-                }, 1800);
-            }
+                function avisar(mensagem) {
+                    botao.textContent = mensagem;
+                    setTimeout(function () {
+                        botao.textContent = textoOriginal;
+                    }, 1800);
+                }
 
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(campo.value).then(
-                    function () { avisar("Copiado!"); },
-                    function () { avisar("Copie manualmente"); }
-                );
-            } else {
-                // Navegadores antigos e páginas servidas sem HTTPS.
-                document.execCommand("copy");
-                avisar("Copiado!");
-            }
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(campo.value).then(
+                        function () { avisar("Copiado!"); },
+                        function () { avisar("Copie manualmente"); }
+                    );
+                } else {
+                    // Navegador antigo ou página servida sem HTTPS.
+                    document.execCommand("copy");
+                    avisar("Copiado!");
+                }
+            });
         });
     }
 
 
-    /* ---------------------------------------------------------------------
-       2. Máscara de telefone
+    /* === Máscara de telefone =============================================
+       O cliente digita como está acostumado e o servidor converte para
+       E.164 (+5577999998888), o formato que o WhatsApp exige. A máscara
+       aqui é conveniência: a conversão de verdade é no servidor, que não
+       confia no que vem do navegador. */
 
-       O cliente digita como está acostumado — (77) 99999-8888 — e o servidor
-       normaliza para E.164 (+5577999998888), único formato aceito pela API
-       do WhatsApp. A máscara aqui é conveniência visual; a conversão de
-       verdade acontece no servidor, que não confia no que vem do navegador.
-       --------------------------------------------------------------------- */
+    function digitosLocais(valor) {
+        var digitos = valor.replace(/\D/g, "");
+
+        // Quando o campo já vem preenchido, ele vem em E.164 - e o 55 da
+        // frente tem que sair antes de mascarar. Sem isso o 55 virava o
+        // DDD, o número do cliente aparecia errado na tela e voltava
+        // errado pro banco.
+        //
+        // Comparo pelo tamanho e não só pelo começo porque DDD 55 existe
+        // (Santa Maria): "(55) 99999-8888" tem 11 dígitos e não pode ser
+        // tocado.
+        if (digitos.length > 11 && digitos.indexOf("55") === 0) {
+            digitos = digitos.slice(2);
+        }
+
+        return digitos.slice(0, 11);
+    }
 
     function aplicarMascaraTelefone(valor) {
-        var digitos = valor.replace(/\D/g, "").slice(0, 11);
+        var digitos = digitosLocais(valor);
 
         if (digitos.length === 0) {
             return "";
@@ -95,7 +105,6 @@
                 }
             });
 
-            // Aplica também ao valor que já veio preenchido pelo servidor.
             if (campo.value) {
                 campo.value = aplicarMascaraTelefone(campo.value);
             }
@@ -103,15 +112,15 @@
     }
 
 
-    /* ---------------------------------------------------------------------
-       3. Confirmação em ações destrutivas
-
-       Registrar falta e cancelar são ações que o profissional não desfaz
-       com um clique. Um data-confirmar no link basta para pedir confirmação.
-       --------------------------------------------------------------------- */
+    /* === Confirmação em ações destrutivas ================================
+       Registrar falta e cancelar não se desfazem com um clique. Um
+       data-confirmar no link basta para pedir confirmação. */
 
     function iniciarConfirmacoes() {
         document.addEventListener("click", function (evento) {
+            if (!evento.target || !evento.target.closest) {
+                return;
+            }
             var alvo = evento.target.closest("[data-confirmar]");
             if (!alvo) {
                 return;
@@ -123,12 +132,9 @@
     }
 
 
-    /* ---------------------------------------------------------------------
-       4. Fechar avisos automaticamente
-
-       Mensagens de sucesso somem sozinhas; erros permanecem até o usuário
-       fechar, porque costumam exigir alguma ação dele.
-       --------------------------------------------------------------------- */
+    /* === Fechar avisos de sucesso ========================================
+       Erro fica na tela até a pessoa fechar, porque costuma exigir alguma
+       ação dela. */
 
     function iniciarFechamentoDeAvisos() {
         var avisos = document.querySelectorAll(".alert-success");
@@ -145,18 +151,14 @@
     }
 
 
-    /* ---------------------------------------------------------------------
-       5. Rolar a régua de dias até o dia selecionado
-
-       Quando o cliente escolhe uma data mais adiante, a régua horizontal
-       precisa reposicionar para que a seleção fique visível.
-       --------------------------------------------------------------------- */
+    /* === Rolar a régua de dias até o dia selecionado ===================== */
 
     function iniciarRolagemDaRegua() {
         var selecionado = document.querySelector(".cartao-dia.selecionado");
         if (!selecionado) {
             return;
         }
+
         var regua = selecionado.closest(".regua-dias");
         if (!regua) {
             return;
@@ -169,13 +171,14 @@
     }
 
 
-    /* ---------------------------------------------------------------------
-       6. Evitar envio duplicado do formulário
-
+    /* === Evitar envio duplicado ==========================================
        Sem isso, um duplo clique em "Confirmar agendamento" dispara duas
-       requisições. A segunda seria recusada pela restrição de exclusão do
-       banco, mas o cliente veria uma mensagem de erro sem entender o motivo.
-       --------------------------------------------------------------------- */
+       requisições. A segunda seria recusada pela restrição do banco, mas o
+       cliente veria um erro sem entender o motivo.
+
+       O setTimeout de zero é o truque: desabilitar o botão durante o
+       submit impediria o navegador de enviar o valor dele. Assim o
+       bloqueio só acontece depois que os dados já saíram. */
 
     function iniciarProtecaoContraEnvioDuplo() {
         var formularios = document.querySelectorAll("form[method='post']");
@@ -188,17 +191,12 @@
                 }
                 setTimeout(function () {
                     botao.disabled = true;
-                    botao.dataset.textoOriginal = botao.textContent;
                     botao.textContent = "Enviando...";
                 }, 0);
             });
         });
     }
 
-
-    /* ---------------------------------------------------------------------
-       Inicialização
-       --------------------------------------------------------------------- */
 
     document.addEventListener("DOMContentLoaded", function () {
         iniciarCopiaDeLink();

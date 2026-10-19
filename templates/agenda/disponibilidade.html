@@ -5,8 +5,9 @@
 {% block conteudo %}
 <h1 class="h3 mb-1">Disponibilidade</h1>
 <p class="text-muted mb-4">
-    Sua rotina semanal. Ausências pontuais como férias e folgas são
-    cadastradas como bloqueios no admin.
+    Sua rotina semanal: o que se repete toda semana. Férias, folga e
+    compromisso de uma data só vão em
+    <a href="{% url 'bloqueios' %}">Bloqueios</a>.
 </p>
 
 <div class="row g-4">
@@ -29,12 +30,15 @@
                                     <span class="selo selo-cancelado ms-1">inativa</span>
                                 {% endif %}
                             </span>
-                            <a href="{% url 'remover_janela' j.pk %}"
-                               class="btn btn-sm btn-link text-danger p-0"
-                               data-confirmar="Remover esta janela de atendimento?"
-                               title="Remover">
-                                <i class="bi bi-trash"></i>
-                            </a>
+                            <form method="post" action="{% url 'remover_janela' j.pk %}">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="btn btn-sm btn-link text-danger p-0"
+                                        data-confirmar="Remover esta janela de atendimento?"
+                                        title="Remover">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
                         </div>
                         {% endfor %}
                     {% else %}
@@ -53,8 +57,10 @@
                 {% csrf_token %}
 
                 <div class="mb-3">
-                    <label class="form-label small">Dia da semana</label>
-                    <select name="dia_semana" class="form-select" required>
+                    <label class="form-label small" for="dia_semana">
+                        Dia da semana
+                    </label>
+                    <select name="dia_semana" id="dia_semana" class="form-select" required>
                         {% for valor, rotulo in dias %}
                             <option value="{{ valor }}">{{ rotulo }}</option>
                         {% endfor %}
@@ -63,20 +69,20 @@
 
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label class="form-label small">Início</label>
-                        <input type="time" name="hora_inicio" class="form-control"
-                               value="08:00" required>
+                        <label class="form-label small" for="hora_inicio">Início</label>
+                        <input type="time" name="hora_inicio" id="hora_inicio"
+                               class="form-control" value="08:00" required>
                     </div>
                     <div class="col-6">
-                        <label class="form-label small">Fim</label>
-                        <input type="time" name="hora_fim" class="form-control"
-                               value="12:00" required>
+                        <label class="form-label small" for="hora_fim">Fim</label>
+                        <input type="time" name="hora_fim" id="hora_fim"
+                               class="form-control" value="12:00" required>
                     </div>
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label small">Local</label>
-                    <select name="local" class="form-select">
+                    <label class="form-label small" for="local">Local</label>
+                    <select name="local" id="local" class="form-select">
                         <option value="">— Sem local definido (online) —</option>
                         {% for l in locais %}
                             <option value="{{ l.pk }}">{{ l.nome }}</option>

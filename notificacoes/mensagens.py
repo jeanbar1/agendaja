@@ -1,101 +1,114 @@
 """
-Contrato entre os templates aprovados na Meta e o código que os dispara.
+O texto de cada mensagem que o sistema manda.
 
-A API do WhatsApp identifica as variáveis pela POSIÇÃO, não pelo nome:
-o que segue como primeiro parâmetro preenche o {{1}} do template. Se a
-ordem divergir do que foi submetido, o cliente recebe a data no lugar do nome.
+Cada mensagem tem um nome e um texto com espacos numerados - {0}, {1} e
+assim por diante. Os valores que entram nesses espacos vem das funcoes
+parametros_* la embaixo, e entram POR POSICAO: o primeiro item da lista
+cai no {0}, o segundo no {1}.
 
-Este módulo é o único lugar onde essa ordem é definida. Alterou o template no
-WhatsApp Manager, altere aqui — e vice-versa.
+E por isso que a ordem importa. Se eu trocar a ordem da lista sem trocar
+o texto, o cliente recebe a data no lugar do nome e o sistema nao percebe
+nada de errado - pra ele os dois sao texto do mesmo jeito.
+
+Deixei o texto e a lista de valores no mesmo arquivo justamente pra isso
+ficar conferivel de olho: o texto esta em cima, a funcao que preenche
+esta embaixo, e da pra ler os dois lado a lado.
 """
 
 from dataclasses import dataclass
 
-IDIOMA = "pt_BR"
-
 
 @dataclass(frozen=True)
-class TemplateWhatsApp:
-    """Descreve um template aprovado na Meta."""
+class Mensagem:
+    """Uma mensagem do sistema: o nome dela e o texto que sai.
+
+    O nome fica gravado em cada Notificacao. Serve pra eu conseguir
+    filtrar o historico depois por tipo de mensagem, e pra saber qual
+    redacao gerou aquele registro.
+
+    Uso frozen=True pra ninguem conseguir mudar o texto em tempo de
+    execucao. O que foi enviado ja foi - a redacao nao muda por baixo.
+    """
 
     nome: str
-    categoria: str
-    variaveis: tuple
-    botoes: tuple = ()
+    texto: str
 
-    @property
-    def total_variaveis(self):
-        return len(self.variaveis)
+    def montar(self, parametros):
+        """Preenche os espacos numerados com os valores, na ordem."""
+        return self.texto.format(*parametros)
 
 
-# --- Dirigidos ao cliente ----------------------------------------------------
+# --- Dirigidas ao cliente ----------------------------------------------------
 
-CONFIRMACAO = TemplateWhatsApp(
+CONFIRMACAO = Mensagem(
     nome="confirmacao_agendamento",
-    categoria="UTILITY",
-    variaveis=("nome", "servico", "data", "horario", "profissional"),
+    texto=(
+        "Olá, {0}! Seu agendamento foi registrado.\n\n"
+        "Serviço: {1}\nData: {2}\nHorário: {3}\nProfissional: {4}\n\n"
+        "Se precisar remarcar, é só responder esta mensagem."
+    ),
 )
 
-LEMBRETE = TemplateWhatsApp(
+LEMBRETE = Mensagem(
     nome="lembrete_agendamento",
-    categoria="UTILITY",
-    variaveis=("nome", "servico", "data", "horario", "local"),
-    # A ordem dos botões espelha a submissão na Meta. O webhook identifica
-    # a resposta pelo índice, então inverter aqui inverte o comportamento.
-    botoes=("Confirmar presença", "Preciso cancelar"),
+    texto=(
+        "Olá, {0}! Passando para lembrar do seu horário.\n\n"
+        "Serviço: {1}\nData: {2} às {3}\nLocal: {4}\n\n"
+        "Podemos confirmar sua presença? Responda CONFIRMAR para "
+        "confirmar ou CANCELAR se não puder vir."
+    ),
 )
 
-CANCELAMENTO = TemplateWhatsApp(
+CANCELAMENTO = Mensagem(
     nome="cancelamento_agendamento",
-    categoria="UTILITY",
-    variaveis=("nome", "servico", "data", "horario"),
+    texto=(
+        "Olá, {0}. Seu agendamento de {1}, marcado para {2} às {3}, "
+        "foi cancelado.\n\n"
+        "Para escolher um novo horário, é só acessar o link de "
+        "agendamento de novo."
+    ),
 )
 
-FEEDBACK = TemplateWhatsApp(
+FEEDBACK = Mensagem(
     nome="solicitacao_feedback",
-    categoria="UTILITY",
-    variaveis=("nome", "servico"),
+    texto=(
+        "Olá, {0}! Como foi seu atendimento de {1}?\n\n"
+        "Sua avaliação leva menos de um minuto e ajuda bastante:\n"
+        "{2}"
+    ),
 )
 
 
-# --- Dirigidos ao profissional -----------------------------------------------
-# Chegam pelo mesmo canal, mas com destinatário diferente. Pela via oficial
-# exigem template próprio aprovado; pelos demais canais são texto livre.
+# --- Dirigidas ao profissional -----------------------------------------------
+# Saem pela mesma sessao de WhatsApp, so muda quem recebe.
 
-NOVO_AGENDAMENTO = TemplateWhatsApp(
+NOVO_AGENDAMENTO = Mensagem(
     nome="novo_agendamento",
-    categoria="UTILITY",
-    variaveis=("cliente", "servico", "data", "horario", "telefone"),
+    texto=(
+        "Novo agendamento na sua agenda.\n\n"
+        "Cliente: {0}\nServiço: {1}\nData: {2} às {3}\nContato: {4}"
+    ),
 )
 
-CANCELAMENTO_CLIENTE = TemplateWhatsApp(
+CANCELAMENTO_CLIENTE = Mensagem(
     nome="cancelamento_pelo_cliente",
-    categoria="UTILITY",
-    variaveis=("cliente", "servico", "data", "horario"),
+    texto=(
+        "{0} cancelou o agendamento de {1}, que estava marcado para "
+        "{2} às {3}.\n\n"
+        "O horário voltou a ficar disponível."
+    ),
 )
 
 
-TODOS = (
-    CONFIRMACAO,
-    LEMBRETE,
-    CANCELAMENTO,
-    FEEDBACK,
-    NOVO_AGENDAMENTO,
-    CANCELAMENTO_CLIENTE,
-)
-
-
-# Índices dos botões de resposta rápida do template de lembrete.
-BOTAO_CONFIRMAR = 0
-BOTAO_CANCELAR = 1
-
-# Palavras que o cliente pode digitar em vez de tocar no botão.
+# Nem todo mundo escreve a palavra inteira, e no celular quase ninguem
+# acentua - por isso "nao" aparece sem acento junto com "não".
 PALAVRAS_CONFIRMAR = {"confirmo", "confirmar", "sim", "ok", "1"}
 PALAVRAS_CANCELAR = {"cancelar", "cancela", "nao", "não", "2"}
 PALAVRAS_DESCADASTRO = {"sair", "parar", "stop", "descadastrar"}
 
 
 def _formatar_data(momento):
+    # Formato brasileiro. A pessoa que le a mensagem nao quer 2026-08-14.
     return momento.strftime("%d/%m/%Y")
 
 
@@ -104,7 +117,7 @@ def _formatar_hora(momento):
 
 
 def parametros_confirmacao(agendamento):
-    """Monta os parâmetros de confirmacao_agendamento, em ordem."""
+    """Os valores de CONFIRMACAO, na ordem dos espacos do texto."""
     inicio = agendamento.inicio
     return [
         agendamento.cliente.nome,
@@ -116,8 +129,13 @@ def parametros_confirmacao(agendamento):
 
 
 def parametros_lembrete(agendamento):
-    """Monta os parâmetros de lembrete_agendamento, em ordem."""
+    """Os valores de LEMBRETE, na ordem dos espacos do texto."""
     inicio = agendamento.inicio
+
+    # O local e o unico que tem regra. Quando existe local cadastrado eu
+    # mando nome e endereco juntos, pra pessoa saber pra onde ir. Quando
+    # nao existe (atendimento online ou a domicilio), uso a modalidade
+    # do servico no lugar - assim o campo nunca sai vazio na mensagem.
     if agendamento.local:
         local = agendamento.local.nome
         if agendamento.local.endereco:
@@ -135,7 +153,7 @@ def parametros_lembrete(agendamento):
 
 
 def parametros_cancelamento(agendamento):
-    """Monta os parâmetros de cancelamento_agendamento, em ordem."""
+    """Os valores de CANCELAMENTO, na ordem dos espacos do texto."""
     inicio = agendamento.inicio
     return [
         agendamento.cliente.nome,
@@ -146,15 +164,33 @@ def parametros_cancelamento(agendamento):
 
 
 def parametros_feedback(agendamento):
-    """Monta os parâmetros de solicitacao_feedback, em ordem."""
+    """Os valores de FEEDBACK, na ordem dos espacos do texto.
+
+    Esse e o unico que monta um link. Uso o codigo (UUID) do
+    agendamento, entao o cliente nao precisa de login nem de senha pra
+    avaliar - so clicar.
+    """
+    # Importo aqui dentro pra nao carregar configuracao do Django no
+    # topo de um modulo que e so texto.
+    from django.conf import settings
+    from django.urls import reverse
+
+    caminho = reverse("publico_avaliar", args=[agendamento.codigo])
+
     return [
         agendamento.cliente.nome,
         agendamento.servico.nome,
+        f"{settings.URL_BASE}{caminho}",
     ]
 
 
 def parametros_novo_agendamento(agendamento):
-    """Aviso ao profissional de que alguém marcou um horário."""
+    """Aviso pro profissional de que alguem marcou um horario.
+
+    Aqui eu mando o telefone do cliente junto de proposito: assim ele
+    consegue chamar a pessoa direto do WhatsApp, sem ter que abrir o
+    sistema pra procurar o contato.
+    """
     inicio = agendamento.inicio
     return [
         agendamento.cliente.nome,
@@ -166,7 +202,7 @@ def parametros_novo_agendamento(agendamento):
 
 
 def parametros_cancelamento_cliente(agendamento):
-    """Aviso ao profissional de que o cliente desmarcou."""
+    """Aviso pro profissional de que o cliente desmarcou."""
     inicio = agendamento.inicio
     return [
         agendamento.cliente.nome,
@@ -176,60 +212,22 @@ def parametros_cancelamento_cliente(agendamento):
     ]
 
 
-def texto_equivalente(template, parametros):
-    """Reconstrói o texto da mensagem para registro e auditoria.
-
-    A Meta não devolve o conteúdo renderizado; guardar essa reconstrução
-    permite saber depois exatamente o que foi enviado a cada destinatário —
-    útil para depuração e para demonstrar conformidade com a LGPD.
-
-    Nos canais que enviam texto livre, é este texto que sai de fato.
-    """
-    modelos = {
-        CONFIRMACAO.nome: (
-            "Olá, {0}! Seu agendamento foi registrado.\n\n"
-            "Serviço: {1}\nData: {2}\nHorário: {3}\nProfissional: {4}\n\n"
-            "Se precisar remarcar, é só responder esta mensagem."
-        ),
-        LEMBRETE.nome: (
-            "Olá, {0}! Passando para lembrar do seu horário.\n\n"
-            "Serviço: {1}\nData: {2} às {3}\nLocal: {4}\n\n"
-            "Podemos confirmar sua presença?"
-        ),
-        CANCELAMENTO.nome: (
-            "Olá, {0}. Seu agendamento de {1}, marcado para {2} às {3}, "
-            "foi cancelado.\n\n"
-            "Para escolher um novo horário, use o botão abaixo."
-        ),
-        FEEDBACK.nome: (
-            "Olá, {0}! Como foi seu atendimento de {1}?\n\n"
-            "Sua avaliação leva menos de um minuto e ajuda o profissional "
-            "a melhorar o serviço."
-        ),
-        NOVO_AGENDAMENTO.nome: (
-            "Novo agendamento na sua agenda.\n\n"
-            "Cliente: {0}\nServiço: {1}\nData: {2} às {3}\nContato: {4}"
-        ),
-        CANCELAMENTO_CLIENTE.nome: (
-            "{0} cancelou o agendamento de {1}, que estava marcado para "
-            "{2} às {3}.\n\n"
-            "O horário voltou a ficar disponível."
-        ),
-    }
-    modelo = modelos.get(template.nome)
-    if modelo is None:
-        return " | ".join(str(p) for p in parametros)
-    return modelo.format(*parametros)
-
-
 def link_wa_me(telefone_e164, texto):
-    """Gera o link de contingência wa.me.
+    """Monta o link wa.me, que e o plano de emergencia.
 
-    O profissional abre o link e envia a mensagem com um toque. Não depende
-    de canal, credencial nem serviço externo — é a garantia de que a
-    demonstração funcione mesmo se tudo o mais estiver fora do ar.
+    O profissional abre o link e a conversa ja aparece com o texto
+    escrito - e so apertar enviar. Nao depende do contêiner, de
+    credencial nem de servico de fora.
+
+    E a garantia de que a demonstracao da defesa funciona mesmo se a
+    Evolution estiver fora do ar ou a internet do IF falhar.
     """
+    # Importo aqui dentro porque so essa funcao usa. Nao vale poluir o
+    # topo do arquivo por causa de uma linha.
     from urllib.parse import quote
 
     numero = telefone_e164.lstrip("+")
+
+    # O quote escapa acento, espaco e quebra de linha. Sem ele, o link
+    # quebra no primeiro espaco do texto.
     return f"https://wa.me/{numero}?text={quote(texto)}"

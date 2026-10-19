@@ -50,7 +50,17 @@
         </table>
     </div>
     {% else %}
-        <div class="p-5 text-center text-muted">Nenhum cliente encontrado.</div>
+        <div class="p-5 text-center text-muted">
+            <i class="bi bi-people icone-vazio d-block mb-2"></i>
+            {% if busca %}
+                Nenhum cliente encontrado com "{{ busca }}".
+            {% else %}
+                Nenhum cliente ainda.<br>
+                <span class="small">
+                    Eles aparecem aqui assim que alguém marcar pelo seu link.
+                </span>
+            {% endif %}
+        </div>
     {% endif %}
 </div>
 

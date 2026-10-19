@@ -8,4 +8,9 @@ urlpatterns = [
 
     # Acompanhamento pelo profissional.
     path("notificacoes/", views.historico, name="notificacoes"),
+
+        # Conexao do WhatsApp pelo navegador, sem terminal.
+    path("whatsapp/", views.conexao_whatsapp, name="conexao_whatsapp"),
+    path("whatsapp/estado/", views.estado_whatsapp, name="estado_whatsapp"),
+    
 ]

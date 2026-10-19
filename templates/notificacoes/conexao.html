@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block titulo %}Conexão do WhatsApp — AgendaJá{% endblock %}
+
+{% block conteudo %}
+<h1 class="h3 mb-1">Conexão do WhatsApp</h1>
+<p class="text-muted mb-4">
+    É por este número que as confirmações e os lembretes saem.
+</p>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-7">
+
+        {% if not configurado %}
+            <div class="cartao p-4">
+                <div class="d-flex gap-3">
+                    <i class="bi bi-plug recurso-icone text-muted"></i>
+                    <div>
+                        <h2 class="h6 mb-1">Não configurado</h2>
+                        <p class="text-muted small mb-3">
+                            Faltam os dados da Evolution no arquivo
+                            <code>.env</code>. Sem eles as mensagens ficam
+                            registradas no histórico como pendentes, mas
+                            não saem.
+                        </p>
+                        <pre class="small bg-light p-3 rounded mb-0"><code>EVOLUTION_URL=http://localhost:8080
+EVOLUTION_PREFIXO=agendaja
+EVOLUTION_API_KEY=a mesma chave do docker-compose.yml</code></pre>
+                    </div>
+                </div>
+            </div>
+
+        {% elif estado.conectado %}
+            <div class="cartao p-4">
+                <div class="d-flex gap-3 mb-4">
+                    <i class="bi bi-check-circle-fill icone-sucesso"></i>
+                    <div>
+                        <h2 class="h6 mb-1">Conectado</h2>
+                        <p class="text-muted small mb-0">
+                            As mensagens já estão saindo pelo WhatsApp.
+                        </p>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="acao" value="desconectar">
+                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                            data-confirmar="Desconectar o WhatsApp? As mensagens param de sair até você conectar de novo.">
+                        <i class="bi bi-box-arrow-right"></i> Desconectar
+                    </button>
+                </form>
+            </div>
+
+        {% elif qrcode_imagem %}
+            <div class="cartao p-4 text-center" id="area-qrcode">
+                <h2 class="h6 mb-3">Leia o código com o seu WhatsApp</h2>
+
+                <img src="{{ qrcode_imagem }}" alt="QR Code de conexão"
+                     class="img-fluid mb-3"
+                     style="max-width: 280px; border: 8px solid #fff; border-radius: 12px;">
+
+                <ol class="text-start small text-muted mx-auto mb-3"
+                    style="max-width: 26rem;">
+                    <li>Abra o WhatsApp no celular</li>
+                    <li>Toque em <strong>Configurações</strong></li>
+                    <li>Toque em <strong>Aparelhos conectados</strong></li>
+                    <li>Toque em <strong>Conectar aparelho</strong></li>
+                    <li>Aponte a câmera para o código acima</li>
+                </ol>
+
+                {% if codigo_pareamento %}
+                    <p class="small text-muted mb-3">
+                        Sem câmera? Use o código de pareamento:<br>
+                        <span class="fs-5 fw-bold text-marca">
+                            {{ codigo_pareamento }}
+                        </span>
+                    </p>
+                {% endif %}
+
+                <p class="small text-muted mb-0" id="aviso-espera">
+                    <span class="spinner-border spinner-border-sm me-1"
+                          role="status" aria-hidden="true"></span>
+                    Esperando a leitura… a página se atualiza sozinha.
+                </p>
+            </div>
+
+        {% else %}
+            <div class="cartao p-4">
+                <div class="d-flex gap-3 mb-4">
+                    <i class="bi bi-exclamation-triangle icone-alerta"></i>
+                    <div>
+                        <h2 class="h6 mb-1">Desconectado</h2>
+                        <p class="text-muted small mb-0">
+                            {% if estado.existe %}
+                                A sessão caiu (estado: {{ estado.detalhe }}).
+                                Isso acontece de vez em quando — é só
+                                conectar de novo.
+                            {% else %}
+                                {{ estado.detalhe }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="acao" value="conectar">
+                    <button type="submit" class="btn btn-principal">
+                        <i class="bi bi-qr-code"></i> Gerar QR Code
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+
+    </div>
+
+    <div class="col-12 col-lg-5">
+        <div class="cartao p-4">
+      
+
+            
+
+            <p class="small text-muted mb-0">
+                O número conectado aqui é <strong>só seu</strong>. Cada
+                profissional tem a sua própria sessão, e as mensagens dos
+                seus clientes saem do seu número — é dele que eles
+                recebem a confirmação e o lembrete, e é para ele que
+                respondem.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script_extra %}
+{% if qrcode_imagem %}
+<script>
+// Enquanto o QR Code esta na tela, pergunto de 5 em 5 segundos se ja
+// conectou. Assim a pessoa le o codigo no celular e a pagina se vira
+// sozinha, em vez de ela ficar apertando F5 sem saber se funcionou.
+(function () {
+    const AREA = document.getElementById("area-qrcode");
+    if (!AREA) { return; }
+
+    let tentativas = 0;
+
+    function conferir() {
+        // Depois de 3 minutos eu paro. O codigo da Evolution expira
+        // antes disso, entao continuar perguntando seria so gastar
+        // requisicao a toa.
+        if (tentativas > 36) {
+            document.getElementById("aviso-espera").textContent =
+                "O código expirou. Recarregue a página para gerar outro.";
+            return;
+        }
+        tentativas += 1;
+
+        fetch("{% url 'estado_whatsapp' %}")
+            .then(function (r) { return r.json(); })
+            .then(function (dados) {
+                if (dados.conectado) {
+                    window.location = "{% url 'conexao_whatsapp' %}";
+                } else {
+                    setTimeout(conferir, 5000);
+                }
+            })
+            .catch(function () { setTimeout(conferir, 5000); });
+    }
+
+    setTimeout(conferir, 5000);
+})();
+</script>
+{% endif %}
+{% endblock %}

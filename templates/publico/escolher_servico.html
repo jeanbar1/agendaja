@@ -11,7 +11,7 @@
             <h1 class="h3 mb-1">{{ profissional.nome_publico }}</h1>
             <p class="text-muted mb-0">{{ profissional.area.nome }}</p>
             {% if profissional.apresentacao %}
-                <p class="small text-muted mt-2 mb-0">{{ profissional.apresentacao }}</p>
+                <p class="small text-muted mt-2 mb-0">{{ profissional.apresentacao|linebreaksbr }}</p>
             {% endif %}
         </div>
 
@@ -35,7 +35,7 @@
                                 {% endif %}
                             </div>
                             {% if s.descricao %}
-                                <div class="small text-muted mt-1">{{ s.descricao }}</div>
+                                <div class="small text-muted mt-1">{{ s.descricao|linebreaksbr }}</div>
                             {% endif %}
                         </div>
                         <div class="text-end text-nowrap">

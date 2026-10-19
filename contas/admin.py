@@ -7,7 +7,7 @@ from .models import AreaAtuacao, Local, Profissional, Usuario
 
 @admin.register(Usuario)
 class UsuarioAdmin(UserAdmin):
-    """Admin ajustado para autenticação por e-mail (sem ``username``)."""
+    """Admin ajustado para autenticação por e-mail (sem username)."""
 
     ordering = ["email"]
     list_display = ["email", "first_name", "last_name", "is_staff", "is_active"]

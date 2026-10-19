@@ -4,18 +4,35 @@
 
 {% block conteudo %}
 <div class="row justify-content-center">
-    <div class="col-12 col-lg-7">
-        <div class="cartao p-4 p-md-5 text-center">
-            <i class="bi bi-person-gear icone-vazio"></i>
-            <h1 class="h4 mt-3">Falta configurar seu perfil profissional</h1>
-            <p class="text-muted">
-                Sua conta existe, mas ainda não está vinculada a um perfil de
-                profissional. Sem ele não há agenda, serviços nem link público
-                de agendamento.
-            </p>
-            <a href="/admin/contas/profissional/add/" class="btn btn-principal mt-2">
-                Criar perfil no admin
-            </a>
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="cartao p-4 text-center">
+            {% if user.perfil_cliente %}
+                <i class="bi bi-shop icone-estado icone-neutro d-block mb-3"></i>
+
+                <h1 class="h5 mb-2">Esta área é dos profissionais</h1>
+                <p class="text-muted mb-4">
+                    Sua conta é de cliente. Para marcar um horário, escolha
+                    um profissional na vitrine.
+                </p>
+
+                <a href="{% url 'explorar' %}" class="btn btn-principal">
+                    Ver os profissionais
+                </a>
+            {% else %}
+                <i class="bi bi-person-gear icone-estado icone-alerta d-block mb-3"></i>
+
+                <h1 class="h5 mb-2">Seu cadastro ainda não está completo</h1>
+                <p class="text-muted mb-4">
+                    Sua conta existe, mas falta o perfil de profissional — o
+                    nome que aparece para o cliente, a área de atuação e o
+                    WhatsApp. Sem isso o sistema não consegue montar a sua
+                    página de agendamento.
+                </p>
+
+                <a href="{% url 'cadastro' %}" class="btn btn-principal">
+                    Completar cadastro
+                </a>
+            {% endif %}
         </div>
     </div>
 </div>

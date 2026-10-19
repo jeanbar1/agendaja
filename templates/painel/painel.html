@@ -9,13 +9,12 @@
         <h1 class="h3 mb-0">{{ profissional.nome_publico }}</h1>
         <p class="text-muted mb-0">{{ hoje|date:"l, d \d\e F \d\e Y" }}</p>
     </div>
-    <a href="{% url 'publico_servico' profissional.slug %}" target="_blank"
+    <a href="{% url 'publico_servico' profissional.slug %}" target="_blank" rel="noopener"
        class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-box-arrow-up-right"></i> Ver página de agendamento
     </a>
 </div>
 
-<!-- Indicadores -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg-3">
         <div class="cartao cartao-indicador p-3">
@@ -57,7 +56,6 @@
 
 <div class="row g-4">
 
-    <!-- Agenda de hoje -->
     <div class="col-12 col-lg-7">
         <div class="cartao p-4">
             <h2 class="h5 mb-3">Agenda de hoje</h2>
@@ -83,13 +81,51 @@
                                 Situação
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'mudar_situacao' a.pk 'confirmado' %}">Confirmar</a></li>
-                                <li><a class="dropdown-item" href="{% url 'mudar_situacao' a.pk 'concluido' %}">Concluir</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'mudar_situacao' a.pk 'faltou' %}"
-                                       data-confirmar="Registrar que {{ a.cliente.nome }} não compareceu?">Registrar falta</a></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'mudar_situacao' a.pk 'cancelado' %}"
-                                       data-confirmar="Cancelar o agendamento de {{ a.cliente.nome }}?">Cancelar</a></li>
+                                {% if a.ocupa_agenda %}
+                                    {% if a.status == "solicitado" %}
+                                    <li>
+                                        <form method="post" action="{% url 'mudar_situacao' a.pk 'confirmado' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item">Confirmar</button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                    <li>
+                                        <form method="post" action="{% url 'mudar_situacao' a.pk 'concluido' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item">Concluir</button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="post" action="{% url 'mudar_situacao' a.pk 'faltou' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item text-danger"
+                                                    data-confirmar="Registrar que {{ a.cliente.nome }} não compareceu?">
+                                                Registrar falta
+                                            </button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form method="post" action="{% url 'mudar_situacao' a.pk 'cancelado' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item text-danger"
+                                                    data-confirmar="Cancelar o agendamento de {{ a.cliente.nome }}? O cliente é avisado pelo WhatsApp.">
+                                                Cancelar
+                                            </button>
+                                        </form>
+                                    </li>
+                                {% else %}
+                                    <li>
+                                        <form method="post" action="{% url 'mudar_situacao' a.pk 'confirmado' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item"
+                                                    data-confirmar="Reabrir o agendamento de {{ a.cliente.nome }}? Só funciona se o horário ainda estiver livre.">
+                                                Reabrir
+                                            </button>
+                                        </form>
+                                    </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </div>
@@ -103,7 +139,6 @@
 
     <div class="col-12 col-lg-5">
 
-        <!-- Link publico -->
         <div class="cartao p-4 mb-4">
             <h2 class="h6 mb-2">Seu link de agendamento</h2>
             <p class="small text-muted">
@@ -118,14 +153,12 @@
             </div>
         </div>
 
-        <!-- Proximos -->
         <div class="cartao p-4">
             <h2 class="h6 mb-3">Próximos agendamentos</h2>
             {% if proximos %}
                 <ul class="list-unstyled mb-0">
                     {% for a in proximos %}
-                    <li class="d-flex justify-content-between align-items-center py-2
-                               {% if not forloop.last %}border-bottom{% endif %}">
+                    <li class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
                         <div>
                             <div class="small fw-semibold">{{ a.inicio|date:"d/m" }} às {{ a.inicio|date:"H:i" }}</div>
                             <div class="small text-muted">{{ a.cliente.nome }} · {{ a.servico.nome }}</div>

@@ -53,6 +53,12 @@
                     <td>
                         <div>{{ a.cliente.nome }}</div>
                         <div class="small text-muted">{{ a.cliente.telefone }}</div>
+                        {% if a.respostas.exists %}
+                            <a href="{% url 'respostas' a.pk %}" class="small">
+                       
+                 
+                            </a>
+                        {% endif %}
                     </td>
                     <td class="d-none d-md-table-cell">
                         <div>{{ a.servico.nome }}</div>
@@ -64,13 +70,51 @@
                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                     data-bs-toggle="dropdown" aria-expanded="false">Alterar</button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'mudar_situacao' a.pk 'confirmado' %}">Confirmar</a></li>
-                                <li><a class="dropdown-item" href="{% url 'mudar_situacao' a.pk 'concluido' %}">Concluir</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'mudar_situacao' a.pk 'faltou' %}"
-                                       data-confirmar="Registrar que {{ a.cliente.nome }} não compareceu?">Registrar falta</a></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'mudar_situacao' a.pk 'cancelado' %}"
-                                       data-confirmar="Cancelar o agendamento de {{ a.cliente.nome }}?">Cancelar</a></li>
+                                {% if a.ocupa_agenda %}
+                                    {% if a.status == "solicitado" %}
+                                    <li>
+                                        <form method="post" action="{% url 'mudar_situacao' a.pk 'confirmado' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item">Confirmar</button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                    <li>
+                                        <form method="post" action="{% url 'mudar_situacao' a.pk 'concluido' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item">Concluir</button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="post" action="{% url 'mudar_situacao' a.pk 'faltou' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item text-danger"
+                                                    data-confirmar="Registrar que {{ a.cliente.nome }} não compareceu?">
+                                                Registrar falta
+                                            </button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form method="post" action="{% url 'mudar_situacao' a.pk 'cancelado' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item text-danger"
+                                                    data-confirmar="Cancelar o agendamento de {{ a.cliente.nome }}? O cliente é avisado pelo WhatsApp.">
+                                                Cancelar
+                                            </button>
+                                        </form>
+                                    </li>
+                                {% else %}
+                                    <li>
+                                        <form method="post" action="{% url 'mudar_situacao' a.pk 'confirmado' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item"
+                                                    data-confirmar="Reabrir o agendamento de {{ a.cliente.nome }}? Só funciona se o horário ainda estiver livre.">
+                                                Reabrir
+                                            </button>
+                                        </form>
+                                    </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </td>

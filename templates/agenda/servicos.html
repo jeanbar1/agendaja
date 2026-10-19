@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block titulo %}Serviços — AgendaJá{% endblock %}
+
+{% block conteudo %}
+<h1 class="h3 mb-1">Serviços</h1>
+<p class="text-muted mb-4">
+    O que você oferece e quanto tempo cada atendimento ocupa na agenda.
+    É a duração daqui que monta os horários livres da página pública.
+</p>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-7">
+        <div class="cartao">
+            {% if servicos %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Serviço</th>
+                            <th class="text-nowrap">Duração</th>
+                            <th class="d-none d-md-table-cell">Preço</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in servicos %}
+                        <tr {% if not s.ativo %}class="opacity-50"{% endif %}>
+                            <td>
+                                <div class="fw-semibold">
+                                    {{ s.nome }}
+                                    {% if not s.ativo %}
+                                        <span class="selo selo-cancelado ms-1">inativo</span>
+                                    {% endif %}
+                                </div>
+                                <div class="small text-muted">
+                                    {{ s.get_modalidade_display }}
+                                    {% if s.exige_perguntas %}
+                                        · <i class="bi bi-chat-square-text"></i>
+                                        com perguntas
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="text-nowrap">
+                                <div>{{ s.duracao_minutos }} min</div>
+                                {% if s.intervalo_apos_minutos %}
+                                    <div class="small text-muted">
+                                        + {{ s.intervalo_apos_minutos }} min de intervalo
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="d-none d-md-table-cell">
+                                {% if s.preco %}
+                                    R$ {{ s.preco|floatformat:2 }}
+                                {% else %}
+                                    <span class="text-muted small">sob orçamento</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <a href="{% url 'perguntas' s.pk %}"
+                                   class="btn btn-sm btn-outline-secondary"
+                                   title="Perguntas ao cliente">
+                                    <i class="bi bi-chat-square-text"></i>
+                                </a>
+                                <form method="post"
+                                      action="{% url 'alternar_servico' s.pk %}"
+                                      class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="btn btn-sm {% if s.ativo %}btn-outline-secondary{% else %}btn-outline-success{% endif %}"
+                                            {% if s.ativo %}data-confirmar="Desativar &quot;{{ s.nome }}&quot;? Ele deixa de aparecer para os clientes."{% endif %}>
+                                        {% if s.ativo %}
+                                            <i class="bi bi-eye-slash"></i> Desativar
+                                        {% else %}
+                                            <i class="bi bi-eye"></i> Ativar
+                                        {% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <div class="p-5 text-center text-muted">
+                    <i class="bi bi-clipboard-plus icone-vazio d-block mb-2"></i>
+                    Você ainda não cadastrou nenhum serviço.<br>
+                    <span class="small">
+                        Sem pelo menos um serviço ativo, sua página de
+                        agendamento fica vazia.
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if servicos %}
+        <p class="small text-muted mt-3 mb-0">
+            Serviço não se apaga, se desativa. Assim os agendamentos
+            antigos continuam com o histórico completo.
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="col-12 col-lg-5">
+        <div class="cartao p-4">
+            <h2 class="h6 mb-3">Novo serviço</h2>
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label small" for="nome">Nome</label>
+                    <input type="text" name="nome" id="nome" class="form-control"
+                           maxlength="120" placeholder="Corte masculino" required>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small" for="duracao_minutos">
+                            Duração (min)
+                        </label>
+                        <input type="number" name="duracao_minutos" id="duracao_minutos"
+                               class="form-control" min="5" step="5" value="30" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small" for="intervalo_apos_minutos">
+                            Intervalo (min)
+                        </label>
+                        <input type="number" name="intervalo_apos_minutos"
+                               id="intervalo_apos_minutos" class="form-control"
+                               min="0" step="5" value="0">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small" for="preco">Preço</label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="number" name="preco" id="preco" class="form-control"
+                               min="0" step="0.01" placeholder="Deixe vazio se for orçar depois">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small" for="modalidade">Modalidade</label>
+                    <select name="modalidade" id="modalidade" class="form-select">
+                        {% for valor, rotulo in modalidades %}
+                            <option value="{{ valor }}">{{ rotulo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox"
+                           name="exige_perguntas" id="exige_perguntas">
+                    <label class="form-check-label small" for="exige_perguntas">
+                        Fazer perguntas ao cliente antes de confirmar
+                    </label>
+                    <div class="form-text small">
+                        Para serviços que precisam de triagem. Depois de
+                        cadastrar, você escreve as perguntas.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-principal w-100">
+                    Cadastrar serviço
+                </button>
+            </form>
+
+            <hr class="my-4">
+
+            <p class="small text-muted mb-0">
+                O <strong>intervalo</strong> é o tempo que fica reservado
+                depois do atendimento, para limpeza, preparo ou
+                deslocamento. Ele ocupa a agenda mas não aparece para o
+                cliente.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

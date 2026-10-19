@@ -1,20 +1,6 @@
-/* =========================================================================
-   AgendaJá — folha de estilo principal
-   Sistema Web de Gerenciamento e Notificação para Agendamento de Serviços
-   Instituto Federal Baiano — Campus Guanambi
+/* AgendaJá — estilo próprio, escrito sobre o Bootstrap 5. */
 
-   Escrita sobre o Bootstrap 5: aqui ficam apenas as regras próprias do
-   projeto. Organizada em seções, na ordem em que os elementos aparecem
-   na tela.
-   ========================================================================= */
-
-
-/* -------------------------------------------------------------------------
-   1. Variáveis de tema
-   Centralizar cores em custom properties permite trocar a identidade visual
-   inteira em um lugar só — útil se cada profissional quiser sua cor.
-   ------------------------------------------------------------------------- */
-
+/* Cores num lugar só: dá pra trocar a identidade visual inteira aqui. */
 :root {
     --cor-principal:        #1d6f6b;
     --cor-principal-escura: #14524f;
@@ -30,9 +16,7 @@
 }
 
 
-/* -------------------------------------------------------------------------
-   2. Base
-   ------------------------------------------------------------------------- */
+/* === Base =============================================================== */
 
 body {
     background-color: var(--cor-fundo);
@@ -44,17 +28,14 @@ a {
     color: var(--cor-principal-escura);
 }
 
-/* Foco visível em toda a interface: exigência de acessibilidade para quem
-   navega por teclado. */
+/* Foco visível para quem navega por teclado. */
 :focus-visible {
     outline: 2px solid var(--cor-principal);
     outline-offset: 2px;
 }
 
 
-/* -------------------------------------------------------------------------
-   3. Navegação
-   ------------------------------------------------------------------------- */
+/* === Navegação ========================================================== */
 
 .navbar-escura {
     background-color: var(--cor-principal-escura);
@@ -65,22 +46,21 @@ a {
     letter-spacing: -0.02em;
 }
 
-/* O botão "Sair" é um form (POST exigido pelo Django 5), mas precisa
-   parecer um item de menu como os demais. */
+/* O "Sair" é um form, porque o Django 5 exige POST no logout. Aqui ele
+   fica parecendo item de menu como os outros. */
 .navbar .btn-link {
     color: rgba(255, 255, 255, .75);
     text-decoration: none;
     padding: .5rem 1rem;
     border: 0;
 }
+
 .navbar .btn-link:hover {
     color: #fff;
 }
 
 
-/* -------------------------------------------------------------------------
-   4. Cartões
-   ------------------------------------------------------------------------- */
+/* === Cartões e indicadores ============================================== */
 
 .cartao {
     background: #fff;
@@ -103,16 +83,28 @@ a {
     color: var(--cor-suave);
 }
 
+.caixa-destaque {
+    background: var(--cor-fundo);
+}
 
-/* -------------------------------------------------------------------------
-   5. Botões
-   ------------------------------------------------------------------------- */
+.rotulo-campo {
+    font-size: .8rem;
+    color: var(--cor-suave);
+}
+
+.text-marca {
+    color: var(--cor-principal-escura);
+}
+
+
+/* === Botões ============================================================= */
 
 .btn-principal {
     background-color: var(--cor-principal);
     border-color: var(--cor-principal);
     color: #fff;
 }
+
 .btn-principal:hover,
 .btn-principal:focus,
 .btn-principal:active {
@@ -121,13 +113,68 @@ a {
     color: #fff;
 }
 
+/* Botão claro para usar sobre o fundo verde do topo da home, onde o
+   btn-principal sumiria. */
+.btn-claro {
+    background: #fff;
+    color: #14524f;
+    font-weight: 600;
+    border: 0;
+}
 
-/* -------------------------------------------------------------------------
-   6. Selos de situação
-   Cada estado do agendamento tem sua cor. Os nomes das classes espelham os
-   valores de Agendamento.Status, o que permite gerar a classe direto no
-   template com selo-{{ agendamento.status }}.
-   ------------------------------------------------------------------------- */
+.btn-claro:hover {
+    background: #e9f1f0;
+    color: #0d3b39;
+}
+
+.btn-contorno-claro {
+    border: 1px solid rgba(255, 255, 255, .5);
+    color: #fff;
+}
+
+.btn-contorno-claro:hover {
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+}
+
+/* Branco com borda, como as diretrizes de marca do Google pedem. */
+.btn-google {
+    background: #fff;
+    border: 1px solid #dadce0;
+    color: #3c4043;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-google:hover {
+    background: #f8f9fa;
+    border-color: #d2d5d9;
+    color: #3c4043;
+}
+
+/* Linha com "ou" no meio, separando os dois jeitos de entrar. */
+.separador-ou {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #9ca3af;
+    font-size: .8rem;
+}
+
+.separador-ou::before,
+.separador-ou::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+}
+
+
+/* === Selos de situação ==================================================
+   Os nomes espelham os valores de Agendamento.Status, então o template
+   monta a classe direto: selo-{{ agendamento.status }}. */
 
 .selo {
     display: inline-block;
@@ -145,21 +192,43 @@ a {
 .selo-faltou     { background: #fee2e2; color: #991b1b; }
 
 
-/* -------------------------------------------------------------------------
-   7. Agenda do dia
-   ------------------------------------------------------------------------- */
+/* === Ícones ============================================================= */
+
+.icone-estado {
+    font-size: 3rem;
+    line-height: 1;
+}
+
+.icone-sucesso { color: var(--cor-principal); }
+.icone-alerta  { color: #d97706; }
+.icone-neutro  { color: #9ca3af; }
+
+.icone-vazio {
+    font-size: 2.5rem;
+    color: var(--cor-principal);
+}
+
+.recurso-icone {
+    font-size: 1.5rem;
+    color: #14524f;
+    line-height: 1;
+}
+
+
+/* === Painel e disponibilidade =========================================== */
 
 .linha-horario {
     border-left: 3px solid var(--cor-principal);
     padding-left: .9rem;
 }
 
+.rotulo-dia {
+    min-width: 130px;
+}
 
-/* -------------------------------------------------------------------------
-   8. Fluxo público de agendamento
-   ------------------------------------------------------------------------- */
 
-/* Numeração das etapas (1 escolher serviço, 2 dia, 3 horário, 4 dados) */
+/* === Fluxo público de agendamento ======================================= */
+
 .passo-numero {
     width: 26px;
     height: 26px;
@@ -174,19 +243,18 @@ a {
     flex-shrink: 0;
 }
 
-/* Cartão de serviço clicável */
 .cartao-servico {
     text-decoration: none;
     color: inherit;
     display: block;
     transition: border-color .12s ease, transform .12s ease;
 }
+
 .cartao-servico:hover {
     border-color: var(--cor-principal);
     transform: translateY(-1px);
 }
 
-/* Régua horizontal de dias */
 .regua-dias {
     display: flex;
     gap: .5rem;
@@ -203,30 +271,33 @@ a {
     padding: .5rem .75rem;
     flex-shrink: 0;
 }
+
 .cartao-dia .dia-semana,
 .cartao-dia .dia-mes {
     font-size: .7rem;
     color: var(--cor-suave);
 }
+
 .cartao-dia .dia-numero {
     font-weight: 700;
     font-size: 1.15rem;
     font-variant-numeric: tabular-nums;
 }
+
 .cartao-dia.selecionado {
     background: var(--cor-principal);
     border-color: var(--cor-principal);
     color: #fff;
 }
+
 .cartao-dia.selecionado .dia-semana,
 .cartao-dia.selecionado .dia-mes {
     color: rgba(255, 255, 255, .85);
 }
 
-/* Grade de horários.
-   O input fica escondido e o label vira o botão: assim o controle continua
-   sendo um radio de verdade — navegável por teclado e enviado pelo form —
-   sem depender de JavaScript para funcionar. */
+/* O input fica escondido e o label vira o botão: o controle continua
+   sendo um radio de verdade, navegável por teclado e enviado pelo form,
+   sem depender de JavaScript. */
 .grade-horarios {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
@@ -269,49 +340,85 @@ a {
 }
 
 
-/* -------------------------------------------------------------------------
-   9. Ícones de estado (comprovante, confirmação, aviso)
-   ------------------------------------------------------------------------- */
+/* === Página inicial pública ============================================= */
 
-.icone-estado {
-    font-size: 3rem;
-    line-height: 1;
-}
-.icone-sucesso { color: var(--cor-principal); }
-.icone-alerta  { color: #d97706; }
-.icone-neutro  { color: #9ca3af; }
-
-.icone-vazio {
-    font-size: 2.5rem;
-    color: var(--cor-principal);
+.secao-topo {
+    background: linear-gradient(160deg, #14524f 0%, #0d3b39 100%);
+    color: #fff;
 }
 
-.caixa-destaque {
-    background: var(--cor-fundo);
+.secao-topo .lead {
+    color: #cfe3e1;
+    max-width: 34rem;
 }
 
-.rotulo-campo {
+.secao-clara {
+    background: #f3f6f6;
+}
+
+/* Imitação da conversa do WhatsApp: mostrar a mensagem como ela chega
+   explica o sistema mais rápido que qualquer parágrafo. */
+.cartao-conversa {
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .15);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.cartao-conversa .balao {
+    background: #fff;
+    color: #1f2937;
+    border-radius: 12px 12px 12px 2px;
+    padding: 14px 16px;
+    font-size: .9rem;
+    line-height: 1.5;
+}
+
+.cartao-conversa .botoes-balao {
+    display: grid;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.cartao-conversa .botoes-balao span {
+    text-align: center;
+    color: #14524f;
+    font-weight: 600;
+    font-size: .85rem;
+    padding: 6px;
+    border-radius: 8px;
+    background: #f3f6f6;
+}
+
+.legenda-conversa {
+    margin-top: 14px;
     font-size: .8rem;
-    color: var(--cor-suave);
+    color: #a9c6c4;
+    text-align: center;
+}
+
+.numero-pesquisa {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #14524f;
+    line-height: 1.1;
+}
+
+.numero-pesquisa span {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #9ca3af;
+}
+
+.rodape-home {
+    background: #0d3b39;
+    color: #a9c6c4;
 }
 
 
-/* Marca textual na tela de login */
-.text-marca {
-    color: var(--cor-principal-escura);
-}
-
-/* Coluna fixa do dia da semana na grade de disponibilidade */
-.rotulo-dia {
-    min-width: 130px;
-}
-
-
-/* -------------------------------------------------------------------------
-   10. Ajustes para telas pequenas
-   O questionário mostrou que 9 dos 11 respondentes usam celular ou tablet,
-   então o layout é pensado primeiro para essas telas.
-   ------------------------------------------------------------------------- */
+/* === Telas pequenas ===================================================== */
 
 @media (max-width: 576px) {
     .cartao-indicador .valor {
@@ -324,11 +431,9 @@ a {
 }
 
 
-/* -------------------------------------------------------------------------
-   11. Impressão
-   O profissional costuma imprimir a agenda do dia; sem isso ele imprimiria
-   também o menu e os botões.
-   ------------------------------------------------------------------------- */
+/* === Impressão ==========================================================
+   O profissional imprime a agenda do dia; sem isso sairiam o menu e os
+   botões junto. */
 
 @media print {
     .navbar,

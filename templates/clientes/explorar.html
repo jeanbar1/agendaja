@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block titulo %}Explorar profissionais — AgendaJá{% endblock %}
+
+{% block conteudo %}
+<h1 class="h3 mb-1">Explorar</h1>
+<p class="text-muted mb-4">
+    Profissionais atendendo pelo AgendaJá. Escolha um e marque seu
+    horário.
+</p>
+
+<div class="cartao p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-5">
+            <label for="busca" class="form-label small mb-1">Buscar</label>
+            <input type="text" name="busca" id="busca" class="form-control form-control-sm"
+                   placeholder="Nome do profissional ou área" value="{{ busca }}">
+        </div>
+        <div class="col-8 col-md-4">
+            <label for="area" class="form-label small mb-1">Área</label>
+            <select name="area" id="area" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for a in areas %}
+                    <option value="{{ a.slug }}"
+                        {% if area_escolhida == a.slug %}selected{% endif %}>
+                        {{ a.nome }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-4 col-md-3">
+            <button type="submit" class="btn btn-principal btn-sm w-100">
+                Buscar
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if profissionais %}
+<div class="row g-3">
+    {% for p in profissionais %}
+    <div class="col-12 col-md-6 col-lg-4">
+        <a href="{% url 'publico_servico' p.slug %}"
+           class="cartao cartao-servico p-4 h-100 d-block text-decoration-none text-reset">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <div class="fw-semibold">{{ p.nome_publico }}</div>
+                    <div class="small text-muted">{{ p.area.nome }}</div>
+                </div>
+                <i class="bi bi-chevron-right text-muted"></i>
+            </div>
+
+            {% if p.apresentacao %}
+                <p class="small text-muted mb-2">
+                    {{ p.apresentacao|truncatechars:90 }}
+                </p>
+            {% endif %}
+
+            <div class="small mb-2">
+                {% for s in p.previa_servicos %}
+                    <span class="selo selo-concluido me-1 mb-1 d-inline-block">
+                        {{ s.nome }} · {{ s.duracao_minutos }} min
+                    </span>
+                {% endfor %}
+            </div>
+
+            <div class="small text-muted">
+                {{ p.quantos_servicos }} serviço{{ p.quantos_servicos|pluralize }}
+                {% if p.menor_preco %}
+                    · a partir de R$ {{ p.menor_preco|floatformat:2 }}
+                {% endif %}
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="cartao p-5 text-center text-muted">
+    <i class="bi bi-search icone-vazio d-block mb-2"></i>
+    {% if busca or area_escolhida %}
+        Nenhum profissional encontrado com esses filtros.
+    {% else %}
+        Ainda não há profissionais atendendo por aqui.
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

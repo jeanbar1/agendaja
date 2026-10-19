@@ -29,7 +29,8 @@
             <div class="regua-dias mb-4">
                 {% for dia, lista in dias %}
                 <a href="?dia={{ dia|date:'Y-m-d' }}"
-                   class="cartao cartao-dia {% if dia == dia_selecionado %}selecionado{% endif %}">
+                   class="cartao cartao-dia {% if dia == dia_selecionado %}selecionado{% endif %}"
+                   {% if dia == dia_selecionado %}aria-current="date"{% endif %}>
                     <div class="dia-semana text-uppercase">{{ dia|date:"D" }}</div>
                     <div class="dia-numero">{{ dia|date:"d" }}</div>
                     <div class="dia-mes">{{ dia|date:"M" }}</div>

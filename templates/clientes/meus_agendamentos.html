@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block titulo %}Meus agendamentos — AgendaJá{% endblock %}
+
+{% block conteudo %}
+<h1 class="h3 mb-1">Meus agendamentos</h1>
+<p class="text-muted mb-4">
+    Tudo que você marcou, com todos os profissionais.
+</p>
+
+<div class="cartao mb-4">
+    <div class="p-3 border-bottom">
+        <h2 class="h6 mb-0">Próximos</h2>
+    </div>
+
+    {% if proximos %}
+        {% for a in proximos %}
+        <div class="p-3 {% if not forloop.last %}border-bottom{% endif %}">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                    <div class="fw-semibold">
+                        {{ a.inicio|date:"d/m/Y" }} às {{ a.inicio|date:"H:i" }} – {{ a.fim|date:"H:i" }}
+                    </div>
+                    <div class="small">
+                        {{ a.servico.nome }} · {{ a.profissional.nome_publico }}
+                    </div>
+                    {% if a.local %}
+                        <div class="small text-muted">
+                            <i class="bi bi-geo-alt"></i> {{ a.local.nome }}
+                            {% if a.local.endereco %}— {{ a.local.endereco }}{% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="text-end text-nowrap">
+                    <span class="selo selo-{{ a.status }}">
+                        {{ a.get_status_display }}
+                    </span>
+                    <div class="mt-2">
+                        <a href="{% url 'publico_sucesso' a.codigo %}"
+                           class="small">Ver comprovante</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="p-5 text-center text-muted">
+            <i class="bi bi-calendar-plus icone-vazio d-block mb-2"></i>
+            Nenhum horário marcado.<br>
+            <a href="{% url 'explorar' %}" class="small">
+                Ver os profissionais disponíveis
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+{% if anteriores %}
+<div class="cartao">
+    <div class="p-3 border-bottom">
+        <h2 class="h6 mb-0 text-muted">Anteriores</h2>
+    </div>
+    {% for a in anteriores %}
+    <div class="d-flex justify-content-between align-items-start p-3 {% if not forloop.last %}border-bottom{% endif %}">
+        <div class="small opacity-75">
+            <div>{{ a.inicio|date:"d/m/Y H:i" }} · {{ a.servico.nome }}</div>
+            <div class="text-muted">{{ a.profissional.nome_publico }}</div>
+        </div>
+        <div class="text-end text-nowrap">
+            <span class="selo selo-{{ a.status }}">{{ a.get_status_display }}</span>
+            {% if a.status == "concluido" and not a.feedback %}
+                <div class="mt-2">
+                    <a href="{% url 'publico_avaliar' a.codigo %}" class="small">
+                        Avaliar
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

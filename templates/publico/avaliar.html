@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block titulo %}Avaliar atendimento — {{ profissional.nome_publico }}{% endblock %}
+
+{% block classe_main %}container py-4 px-3{% endblock %}
+
+{% block conteudo %}
+<div class="mx-auto" style="max-width: 560px;">
+
+    {% if avaliacao %}
+        {# Já respondeu: mostro o que ele deu e encerro. #}
+        <div class="cartao p-4 text-center">
+            <i class="bi bi-check-circle icone-estado icone-sucesso d-block mb-2"></i>
+            <h1 class="h4 mb-2">Avaliação registrada</h1>
+            <p class="text-muted mb-4">
+                Obrigado por responder, {{ agendamento.cliente.nome }}.
+            </p>
+
+            <div class="mb-3">
+                {% for _ in "12345"|make_list %}
+                    {% if forloop.counter <= avaliacao.nota %}
+                        <i class="bi bi-star-fill text-warning fs-3"></i>
+                    {% else %}
+                        <i class="bi bi-star text-muted fs-3"></i>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {% if avaliacao.comentario %}
+                <p class="fst-italic text-muted mb-0">
+                    “{{ avaliacao.comentario }}”
+                </p>
+            {% endif %}
+        </div>
+
+    {% elif not concluido %}
+        {# Ainda não aconteceu, ou foi cancelado. #}
+        <div class="cartao p-4 text-center">
+            <i class="bi bi-hourglass-split icone-estado icone-alerta d-block mb-2"></i>
+            <h1 class="h4 mb-2">Ainda não dá para avaliar</h1>
+            <p class="text-muted mb-0">
+                Este atendimento
+                {% if agendamento.status == "cancelado" %}
+                    foi cancelado.
+                {% elif agendamento.status == "faltou" %}
+                    não chegou a acontecer.
+                {% else %}
+                    ainda não foi concluído. Assim que o profissional
+                    finalizar, você recebe o link pelo WhatsApp.
+                {% endif %}
+            </p>
+        </div>
+
+    {% else %}
+        <div class="text-center mb-4">
+            <h1 class="h4 mb-1">Como foi seu atendimento?</h1>
+            <p class="text-muted mb-0">
+                {{ agendamento.servico.nome }} com
+                {{ profissional.nome_publico }}<br>
+                <span class="small">
+                    {{ agendamento.inicio|date:"d/m/Y" }} às
+                    {{ agendamento.inicio|date:"H:i" }}
+                </span>
+            </p>
+        </div>
+
+        <div class="cartao p-4">
+            <form method="post">
+                {% csrf_token %}
+
+                <p class="rotulo-campo mb-2">Sua nota</p>
+
+                <div class="d-grid gap-2 mb-4">
+                    {% for valor, rotulo in notas reversed %}
+                    <input type="radio" class="btn-check" name="nota"
+                           id="nota{{ valor }}" value="{{ valor }}" required>
+                    <label class="btn btn-outline-warning text-start py-2"
+                           for="nota{{ valor }}">
+                        {% for _ in "12345"|make_list %}
+                            {% if forloop.counter <= valor %}
+                                <i class="bi bi-star-fill"></i>
+                            {% else %}
+                                <i class="bi bi-star opacity-25"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="ms-2">
+                            {% if valor == 5 %}Ótimo
+                            {% elif valor == 4 %}Bom
+                            {% elif valor == 3 %}Razoável
+                            {% elif valor == 2 %}Ruim
+                            {% else %}Péssimo{% endif %}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small" for="comentario">
+                        Quer comentar alguma coisa? (opcional)
+                    </label>
+                    <textarea name="comentario" id="comentario" rows="3"
+                              maxlength="1000" class="form-control"
+                              placeholder="O que foi bom, o que dá para melhorar…"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-principal w-100 py-2">
+                    Enviar avaliação
+                </button>
+            </form>
+        </div>
+
+        <p class="small text-muted text-center mt-3 mb-0">
+            Sua avaliação vai só para {{ profissional.nome_publico }}.
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,29 +1,24 @@
 """
-Canais de envio de notificação.
+O envio de mensagem pelo WhatsApp.
 
-O sistema não depende de um provedor específico de WhatsApp. Esta camada
-define um contrato comum e três implementações; a escolha é feita por
-configuração, em ``WHATSAPP_CANAL``, sem alterar nenhuma regra de negócio.
+Quem entrega a mensagem e a Evolution API, rodando em contêiner aqui na
+maquina. Ela manda pelo proprio numero do profissional, vinculado lendo
+um QR Code igual ao WhatsApp Web: nao precisa aprovar template, nao
+precisa verificacao de negocio e nao precisa CNPJ.
 
-A separação existe por uma razão prática. A API oficial da Meta exige
-verificação de negócio com CNPJ para uso em produção — requisito que boa
-parte dos profissionais autônomos, público-alvo deste trabalho, não atende.
-Desacoplar o canal permite operar com uma alternativa no protótipo e migrar
-para a via oficial trocando uma linha de configuração.
+Esse ultimo ponto foi o que decidiu a escolha. A API oficial da Meta
+exige CNPJ pra rodar em producao, e boa parte dos profissionais
+autonomos - que sao justamente o publico desse trabalho - nao tem. Se eu
+amarrasse o sistema na Meta, ele so serviria pra quem ja e empresa.
 
-Canais disponíveis:
+A limitacao, que eu declaro no trabalho e nao escondo: a Evolution
+funciona por cima da interface web do WhatsApp, o que vai contra os
+termos de uso deles e pode dar bloqueio no numero. Ela serve pro
+prototipo; pra rodar de verdade, o certo e o canal oficial.
 
-``simulado``
-    Registra o envio sem sair da máquina. Padrão quando não há credenciais.
-    Permite desenvolver e demonstrar o sistema completo sem depender de
-    serviço externo.
-
-``meta``
-    API oficial (Cloud API). Envia templates previamente aprovados.
-
-``evolution``
-    Evolution API, executada em contêiner local. Envia texto livre, sem
-    exigir aprovação de template nem verificação de negócio.
+Cada profissional tem a propria sessao. O cliente marcou com uma pessoa
+especifica, entao a mensagem tem que sair do numero dela - nao de um
+numero generico do sistema.
 """
 
 import json
@@ -34,220 +29,42 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+# Sem timeout, uma requisicao travada segura o processo pra sempre. Como
+# o envio roda dentro de um comando agendado, isso deixaria o comando
+# pendurado sem nunca terminar.
 TEMPO_LIMITE = 15  # segundos
 
 
 class ErroEnvio(Exception):
-    """Falha ao entregar a mensagem ao provedor."""
+    """Deu errado na hora de entregar a mensagem pro provedor."""
 
 
-# ---------------------------------------------------------------------------
-# Contrato
-# ---------------------------------------------------------------------------
+class CanalEvolution:
+    """A conversa com a Evolution API de um profissional.
 
-class CanalNotificacao:
-    """Contrato comum a todos os canais.
-
-    O método de envio recebe **as duas formas** da mensagem: o template com
-    seus parâmetros, usado pela via oficial, e o texto já montado, usado
-    pelos canais que enviam mensagem livre. Cada implementação usa o que
-    lhe serve, e quem chama não precisa saber qual é qual.
-    """
-
-    nome = "abstrato"
-
-    @property
-    def disponivel(self):
-        """Indica se o canal tem configuração suficiente para operar."""
-        raise NotImplementedError
-
-    def enviar(self, telefone, template, parametros, texto):
-        """Envia a mensagem.
-
-        Returns:
-            Identificador da mensagem no provedor.
-
-        Raises:
-            ErroEnvio: quando o provedor recusa o envio.
-        """
-        raise NotImplementedError
-
-    def enviar_texto(self, telefone, texto):
-        """Envia texto livre, sem template.
-
-        Usado nas respostas automáticas do webhook.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def _so_digitos(telefone):
-        return telefone.lstrip("+")
-
-
-# ---------------------------------------------------------------------------
-# Simulado
-# ---------------------------------------------------------------------------
-
-class CanalSimulado(CanalNotificacao):
-    """Registra o envio no log, sem contatar serviço nenhum.
-
-    Não é apenas um recurso de desenvolvimento: também é a contingência
-    para o caso de o provedor estar fora do ar, garantindo que o sistema
-    continue registrando corretamente o que deveria ter sido enviado.
-    """
-
-    nome = "simulado"
-
-    @property
-    def disponivel(self):
-        return True
-
-    def enviar(self, telefone, template, parametros, texto):
-        logger.info(
-            "[SIMULADO] para=%s template=%s\n%s",
-            telefone, template, texto,
-        )
-        return f"simulado-{template}-{self._so_digitos(telefone)}"
-
-    def enviar_texto(self, telefone, texto):
-        logger.info("[SIMULADO] texto para %s: %s", telefone, texto[:120])
-        return f"simulado-texto-{self._so_digitos(telefone)}"
-
-
-# ---------------------------------------------------------------------------
-# Meta Cloud API (oficial)
-# ---------------------------------------------------------------------------
-
-class CanalMeta(CanalNotificacao):
-    """API oficial do WhatsApp Business.
-
-    Mensagem iniciada pela empresa só é aceita no formato de template
-    previamente aprovado pela Meta. Texto livre funciona apenas dentro da
-    janela de 24 horas aberta por uma mensagem do cliente.
-    """
-
-    nome = "meta"
-
-    def __init__(self, token=None, phone_number_id=None, versao=None):
-        self.token = token if token is not None else settings.WHATSAPP_TOKEN
-        self.phone_number_id = (
-            phone_number_id
-            if phone_number_id is not None
-            else settings.WHATSAPP_PHONE_NUMBER_ID
-        )
-        self.versao = versao or settings.WHATSAPP_API_VERSION
-
-    @property
-    def disponivel(self):
-        return bool(self.token and self.phone_number_id)
-
-    @property
-    def _url(self):
-        return (
-            f"https://graph.facebook.com/{self.versao}/"
-            f"{self.phone_number_id}/messages"
-        )
-
-    @property
-    def _cabecalhos(self):
-        return {
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json",
-        }
-
-    def enviar(self, telefone, template, parametros, texto):
-        # Template sem variáveis não pode receber o bloco de parâmetros:
-        # a Meta recusa com "template param count mismatch".
-        modelo = {"name": template, "language": {"code": "pt_BR"}}
-        if parametros:
-            modelo["components"] = [
-                {
-                    "type": "body",
-                    "parameters": [
-                        {"type": "text", "text": str(v)} for v in parametros
-                    ],
-                }
-            ]
-
-        return self._postar({
-            "messaging_product": "whatsapp",
-            "recipient_type": "individual",
-            "to": self._so_digitos(telefone),
-            "type": "template",
-            "template": modelo,
-        })
-
-    def enviar_texto(self, telefone, texto):
-        return self._postar({
-            "messaging_product": "whatsapp",
-            "recipient_type": "individual",
-            "to": self._so_digitos(telefone),
-            "type": "text",
-            "text": {"preview_url": False, "body": texto},
-        })
-
-    def _postar(self, corpo):
-        try:
-            resposta = requests.post(
-                self._url,
-                headers=self._cabecalhos,
-                data=json.dumps(corpo),
-                timeout=TEMPO_LIMITE,
-            )
-        except requests.RequestException as erro:
-            raise ErroEnvio(f"Falha de rede ao contatar a Meta: {erro}") from erro
-
-        if resposta.status_code >= 400:
-            raise ErroEnvio(self._descrever_erro(resposta))
-
-        dados = resposta.json()
-        mensagens = dados.get("messages") or []
-        if not mensagens:
-            raise ErroEnvio(f"Resposta sem identificador: {dados}")
-        return mensagens[0].get("id", "")
-
-    @staticmethod
-    def _descrever_erro(resposta):
-        """Extrai a mensagem útil do JSON aninhado que a Meta devolve."""
-        try:
-            dados = resposta.json()
-        except ValueError:
-            return f"HTTP {resposta.status_code}: {resposta.text[:300]}"
-
-        erro = dados.get("error", {})
-        partes = [
-            f"HTTP {resposta.status_code}",
-            erro.get("message", ""),
-            erro.get("error_user_msg", ""),
-            f"(código {erro.get('code')})" if erro.get("code") else "",
-        ]
-        return " ".join(p for p in partes if p).strip()
-
-
-# ---------------------------------------------------------------------------
-# Evolution API (não oficial)
-# ---------------------------------------------------------------------------
-
-class CanalEvolution(CanalNotificacao):
-    """Evolution API, executada em contêiner local.
-
-    Envia texto livre a partir do próprio número do profissional, vinculado
-    por leitura de QR Code. Dispensa aprovação de template, verificação de
-    negócio e CNPJ.
-
-    Limitação a declarar no trabalho: a Evolution opera sobre a interface
-    web do WhatsApp, o que contraria os termos de uso do serviço e implica
-    risco de bloqueio do número. É adequada ao protótipo; para operação
-    contínua, o canal oficial é o recomendado — e por isso os dois estão
-    implementados.
+    Uma instancia dessa classe aponta pra sessao de WhatsApp de UM
+    profissional. Quem monta ela e o do_profissional, ou o obter_canal
+    la embaixo.
     """
 
     nome = "evolution"
 
     def __init__(self, url=None, instancia=None, chave=None):
+        # O rstrip("/") evita a barra dobrada quando alguem escreve a
+        # URL terminando em / no .env.
         self.url = (url or settings.EVOLUTION_URL or "").rstrip("/")
-        self.instancia = instancia or settings.EVOLUTION_INSTANCIA
+
+        # A instancia e por profissional, entao ela NAO vem do .env:
+        # quem sabe qual e o dono da mensagem tem que informar. Sem
+        # instancia o canal se declara indisponivel e o envio nao sai -
+        # que e melhor do que mandar pelo numero errado.
+        self.instancia = instancia or ""
         self.chave = chave or settings.EVOLUTION_API_KEY
+
+    @classmethod
+    def do_profissional(cls, profissional):
+        """Monta o canal ja apontando pra sessao desse profissional."""
+        return cls(instancia=profissional.garantir_instancia_whatsapp())
 
     @property
     def disponivel(self):
@@ -257,11 +74,15 @@ class CanalEvolution(CanalNotificacao):
     def _cabecalhos(self):
         return {"apikey": self.chave, "Content-Type": "application/json"}
 
-    def enviar(self, telefone, template, parametros, texto):
-        # A Evolution não conhece templates: envia o texto já montado.
-        return self.enviar_texto(telefone, texto)
+    @staticmethod
+    def _so_digitos(telefone):
+        # Eu guardo o telefone com o + na frente (+5577999998888), mas a
+        # Evolution quer so os numeros. Tiro o sinal na hora de enviar
+        # em vez de guardar de outro jeito.
+        return telefone.lstrip("+")
 
-    def enviar_texto(self, telefone, texto):
+    def enviar(self, telefone, texto):
+        """Manda o texto e devolve o identificador da mensagem."""
         endereco = f"{self.url}/message/sendText/{self.instancia}"
         corpo = {"number": self._so_digitos(telefone), "text": texto}
 
@@ -273,6 +94,9 @@ class CanalEvolution(CanalNotificacao):
                 timeout=TEMPO_LIMITE,
             )
         except requests.RequestException as erro:
+            # Erro mais comum aqui e o contêiner estar parado, entao ja
+            # deixo a dica na propria mensagem em vez de me perguntar
+            # depois o que aconteceu.
             raise ErroEnvio(
                 f"Não consegui falar com a Evolution em {self.url}. "
                 f"O contêiner está no ar? Detalhe: {erro}"
@@ -284,22 +108,25 @@ class CanalEvolution(CanalNotificacao):
         try:
             dados = resposta.json()
         except ValueError:
+            # Mandou e nao devolveu JSON. Como o envio deu certo, sigo
+            # em frente sem identificador em vez de dar erro.
             return ""
 
-        # A Evolution devolve o identificador em key.id.
         return (dados.get("key") or {}).get("id", "")
 
-    # -- Administração da instância -----------------------------------------
-    # Uma "instância" é uma sessão de WhatsApp vinculada a um número. Estes
-    # métodos existem para o comando `manage.py whatsapp`, que cuida do
-    # ciclo de vida da sessão sem exigir que se monte requisição na mão.
+    # -- Administração da sessão --------------------------------------------
+    # "Instancia" aqui e uma sessao de WhatsApp ligada a um numero. Os
+    # metodos abaixo sao pra tela de conexao e pro comando
+    # `manage.py whatsapp`, que cuidam de conectar, ver o estado e
+    # desconectar.
 
     def _pedir(self, metodo, caminho, corpo=None):
-        endereco = f"{self.url}{caminho}"
+        # Junta o tratamento de erro num lugar so. Aceita qualquer verbo
+        # HTTP porque a administracao usa GET, POST e DELETE.
         try:
             resposta = requests.request(
                 metodo,
-                endereco,
+                f"{self.url}{caminho}",
                 headers=self._cabecalhos,
                 data=json.dumps(corpo) if corpo is not None else None,
                 timeout=TEMPO_LIMITE,
@@ -315,28 +142,48 @@ class CanalEvolution(CanalNotificacao):
         except ValueError:
             dados = {}
 
+        # Devolvo o codigo junto porque quem chama precisa distinguir
+        # "nao existe" (404) de "existe mas esta desconectada".
         return resposta.status_code, dados
 
-    def estado_da_conexao(self):
-        """Consulta se a instância está conectada ao WhatsApp.
+    @staticmethod
+    def _mensagem_de_erro(dados):
+        """Tira a explicacao de dentro da resposta de erro da Evolution.
 
-        Sem isso, o profissional só descobre que a sessão caiu quando uma
-        mensagem falha.
+        Ela devolve o motivo em response.message, mas nem sempre: tem
+        caso em que "response" vem como texto ou como lista. O isinstance
+        evita que o tratamento do erro vire outro erro.
+        """
+        resposta = dados.get("response")
+        if isinstance(resposta, dict) and resposta.get("message"):
+            return resposta["message"]
+        return dados or "sem detalhe"
+
+    def estado_da_conexao(self):
+        """Diz se a sessao esta conectada no WhatsApp.
+
+        Sem isso, o profissional so ia descobrir que a sessao caiu
+        quando uma mensagem falhasse - ou seja, quando o cliente ja nao
+        tivesse recebido o lembrete.
         """
         try:
             codigo, dados = self._pedir(
                 "GET", f"/instance/connectionState/{self.instancia}"
             )
         except ErroEnvio as erro:
+            # Contêiner fora do ar. Nao deixo o erro subir: devolvo o
+            # mesmo formato de sempre, com o motivo dentro.
             return {"existe": False, "conectado": False, "detalhe": str(erro)}
 
         if codigo == 404:
             return {
                 "existe": False,
                 "conectado": False,
-                "detalhe": "instância não encontrada",
+                "detalhe": "sessão não encontrada",
             }
 
+        # "open" e o unico estado que significa conectado de verdade. Os
+        # outros ("connecting", "close") sao sessao caindo ou ja caida.
         estado = (dados.get("instance") or {}).get("state", "")
         return {
             "existe": True,
@@ -345,73 +192,67 @@ class CanalEvolution(CanalNotificacao):
         }
 
     def criar_instancia(self):
-        """Cria a instância, se ainda não existir."""
+        """Cria a sessao, quando ela ainda nao existe."""
         codigo, dados = self._pedir(
             "POST",
             "/instance/create",
             {
                 "instanceName": self.instancia,
+                # BAILEYS e a integracao que usa QR Code. E o que faz
+                # funcionar com numero comum, sem conta de empresa.
                 "integration": "WHATSAPP-BAILEYS",
                 "qrcode": True,
             },
         )
         if codigo >= 400:
-            mensagem = dados.get("response", {}).get("message") or dados
-            raise ErroEnvio(f"HTTP {codigo}: {mensagem}")
+            raise ErroEnvio(f"HTTP {codigo}: {self._mensagem_de_erro(dados)}")
         return dados
 
     def obter_qrcode(self):
-        """Pede o QR Code para vincular o número.
+        """Pede o QR Code pra vincular o numero.
 
-        Returns:
-            ``dict`` com ``code`` (conteúdo do QR, para desenhar no
-            terminal) e ``pairingCode`` (alternativa por código numérico,
-            digitada no aplicativo).
+        Volta um dicionario com "code", que e o conteudo do QR pra
+        desenhar na tela, e "pairingCode", que e a alternativa por
+        codigo numerico digitado no aplicativo - util quando a camera
+        nao colabora.
         """
-        codigo, dados = self._pedir(
-            "GET", f"/instance/connect/{self.instancia}"
-        )
+        codigo, dados = self._pedir("GET", f"/instance/connect/{self.instancia}")
         if codigo >= 400:
-            mensagem = dados.get("response", {}).get("message") or dados
-            raise ErroEnvio(f"HTTP {codigo}: {mensagem}")
+            raise ErroEnvio(f"HTTP {codigo}: {self._mensagem_de_erro(dados)}")
         return dados
 
     def desconectar(self):
-        """Encerra a sessão sem apagar a instância."""
+        """Encerra a sessao sem apagar a instancia.
+
+        Uso logout e nao delete de proposito: assim da pra reconectar
+        depois lendo o QR de novo, sem ter que criar tudo outra vez.
+        """
         return self._pedir("DELETE", f"/instance/logout/{self.instancia}")
 
 
-# ---------------------------------------------------------------------------
-# Seleção do canal
-# ---------------------------------------------------------------------------
+def obter_canal(profissional):
+    """Devolve o canal desse profissional, ou None se ele nao pode enviar.
 
-CANAIS = {
-    CanalSimulado.nome: CanalSimulado,
-    CanalMeta.nome: CanalMeta,
-    CanalEvolution.nome: CanalEvolution,
-}
-
-
-def obter_canal(nome=None):
-    """Devolve o canal configurado, com queda para o simulado.
-
-    Se o canal escolhido estiver sem configuração completa, o sistema não
-    falha: registra o aviso e opera em modo simulado. Isso evita que uma
-    variável de ambiente esquecida derrube o agendamento — que é a função
-    essencial — por causa da mensagem, que é acessória.
+    Devolver None em vez de levantar erro e de proposito: agendar e a
+    funcao principal do sistema, avisar e consequencia. Se o contêiner
+    estiver parado ou o profissional ainda nao tiver lido o QR Code, o
+    agendamento grava do mesmo jeito e a mensagem fica PENDENTE no
+    banco - o comando agendado tenta de novo depois, quando a sessao
+    voltar. Nada se perde.
     """
-    nome = nome or getattr(settings, "WHATSAPP_CANAL", CanalSimulado.nome)
-    classe = CANAIS.get(nome)
+    if profissional is None:
+        logger.warning(
+            "Envio pedido sem profissional. Cada prestador tem a própria "
+            "sessão, então o envio precisa saber de quem é a mensagem."
+        )
+        return None
 
-    if classe is None:
-        logger.warning("Canal '%s' não existe; usando o simulado.", nome)
-        return CanalSimulado()
-
-    canal = classe()
+    canal = CanalEvolution.do_profissional(profissional)
     if not canal.disponivel:
         logger.warning(
-            "Canal '%s' sem configuração completa; usando o simulado.", nome
+            "Sessão de WhatsApp de %s indisponível; a mensagem fica pendente.",
+            profissional,
         )
-        return CanalSimulado()
+        return None
 
     return canal

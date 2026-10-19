@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block titulo %}Bloqueios — AgendaJá{% endblock %}
+
+{% block conteudo %}
+<h1 class="h3 mb-1">Bloqueios</h1>
+<p class="text-muted mb-4">
+    Folgas, férias e compromissos. A disponibilidade é a sua rotina da
+    semana; o bloqueio é a exceção de uma data específica — e tem
+    prioridade sobre ela.
+</p>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-7">
+        <div class="cartao">
+            <div class="p-3 border-bottom">
+                <h2 class="h6 mb-0">Próximos</h2>
+            </div>
+
+            {% if proximos %}
+                {% for b in proximos %}
+                <div class="d-flex justify-content-between align-items-start p-3
+                            {% if not forloop.last %}border-bottom{% endif %}">
+                    <div>
+                        <div class="fw-semibold">
+                            {{ b.inicio|date:"d/m/Y" }}
+                            {% if b.inicio|date:"d/m/Y" != b.fim|date:"d/m/Y" %}
+                                até {{ b.fim|date:"d/m/Y" }}
+                            {% endif %}
+                        </div>
+                        <div class="small text-muted">
+                            {{ b.inicio|date:"H:i" }} – {{ b.fim|date:"H:i" }}
+                            {% if b.motivo %}· {{ b.motivo }}{% endif %}
+                        </div>
+                    </div>
+                    <form method="post" action="{% url 'remover_bloqueio' b.pk %}"
+                          class="ms-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0"
+                                data-confirmar="Remover este bloqueio? O período volta a ficar disponível."
+                                title="Remover">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="p-5 text-center text-muted">
+                    <i class="bi bi-calendar-check icone-vazio d-block mb-2"></i>
+                    Nenhum bloqueio pela frente.<br>
+                    <span class="small">
+                        Sua agenda segue a grade da semana normalmente.
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if anteriores %}
+        <div class="cartao mt-4">
+            <div class="p-3 border-bottom">
+                <h2 class="h6 mb-0 text-muted">Anteriores</h2>
+            </div>
+            {% for b in anteriores %}
+            <div class="d-flex justify-content-between align-items-start p-3 opacity-75
+                        {% if not forloop.last %}border-bottom{% endif %}">
+                <div>
+                    <div class="small">
+                        {{ b.inicio|date:"d/m/Y H:i" }} –
+                        {{ b.fim|date:"d/m/Y H:i" }}
+                    </div>
+                    {% if b.motivo %}
+                        <div class="small text-muted">{{ b.motivo }}</div>
+                    {% endif %}
+                </div>
+                <form method="post" action="{% url 'remover_bloqueio' b.pk %}"
+                      class="ms-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-link text-muted p-0"
+                            data-confirmar="Remover este bloqueio antigo?"
+                            title="Remover">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-12 col-lg-5">
+        <div class="cartao p-4">
+            <h2 class="h6 mb-3">Novo bloqueio</h2>
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label small" for="data_inicio">
+                        De qual dia
+                    </label>
+                    <input type="date" name="data_inicio" id="data_inicio"
+                           class="form-control" value="{{ hoje|date:'Y-m-d' }}"
+                           required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small" for="data_fim">
+                        Até qual dia
+                    </label>
+                    <input type="date" name="data_fim" id="data_fim"
+                           class="form-control" value="{{ hoje|date:'Y-m-d' }}">
+                    <div class="form-text small">
+                        Deixe igual para bloquear um dia só.
+                    </div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox"
+                           name="dia_todo" id="dia_todo" checked>
+                    <label class="form-check-label small" for="dia_todo">
+                        Dia inteiro
+                    </label>
+                </div>
+
+                <div class="row g-2 mb-3" id="faixa_horas">
+                    <div class="col-6">
+                        <label class="form-label small" for="hora_inicio">
+                            Das
+                        </label>
+                        <input type="time" name="hora_inicio" id="hora_inicio"
+                               class="form-control" value="08:00">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small" for="hora_fim">
+                            Até
+                        </label>
+                        <input type="time" name="hora_fim" id="hora_fim"
+                               class="form-control" value="18:00">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small" for="motivo">
+                        Motivo (opcional)
+                    </label>
+                    <input type="text" name="motivo" id="motivo"
+                           class="form-control" maxlength="120"
+                           placeholder="Férias, consulta, curso…">
+                </div>
+
+                <button type="submit" class="btn btn-principal w-100">
+                    Bloquear período
+                </button>
+            </form>
+
+            <hr class="my-4">
+
+            <p class="small text-muted mb-0">
+                Bloquear <strong>não desmarca</strong> quem já estava
+                agendado. Se houver agendamento no período, o sistema
+                avisa e você decide se cancela ou remarca.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script_extra %}
+<script>
+// Esconder as horas é só conforto visual: mesmo escondido, a view força
+// 00:00–23:59 quando "dia inteiro" está marcado.
+(function () {
+    var caixa = document.getElementById("dia_todo");
+    var faixa = document.getElementById("faixa_horas");
+    if (!caixa || !faixa) { return; }
+
+    function atualizar() {
+        faixa.style.display = caixa.checked ? "none" : "";
+    }
+    caixa.addEventListener("change", atualizar);
+    atualizar();
+})();
+</script>
+{% endblock %}

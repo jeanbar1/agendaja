@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block titulo %}AgendaJá — agenda online para profissionais autônomos{% endblock %}
+
+{% block classe_main %}{% endblock %}
+
+{% block conteudo %}
+
+<section class="secao-topo">
+    <div class="container py-5">
+        <div class="row align-items-center g-5">
+            <div class="col-12 col-lg-7">
+                <img src="{% static 'icones/icone-192.png' %}" alt=""
+                     width="56" height="56" class="mb-3 rounded-3">
+
+                <h1 class="display-6 fw-bold mb-3">
+                    Sua agenda funcionando<br>enquanto você atende.
+                </h1>
+
+                <p class="lead mb-4">
+                    O cliente marca sozinho pelo link, sem instalar nada e
+                    sem criar conta. A confirmação e o lembrete saem
+                    automaticamente pelo WhatsApp — e você fica sabendo na
+                    hora quando alguém desmarca.
+                </p>
+
+                <div class="d-flex flex-wrap gap-2">
+                    {% if user.perfil_cliente %}
+                        <a href="{% url 'explorar' %}" class="btn btn-claro btn-lg">
+                            Ver os profissionais
+                        </a>
+                    {% elif user.is_authenticated %}
+                        <a href="{% url 'painel' %}" class="btn btn-claro btn-lg">
+                            Ir para o painel
+                        </a>
+                    {% else %}
+                        <a href="{% url 'cadastro' %}" class="btn btn-claro btn-lg">
+                            Criar minha conta
+                        </a>
+                        <a href="{% url 'login' %}" class="btn btn-contorno-claro btn-lg">
+                            Já tenho conta
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-5">
+                <div class="cartao-conversa">
+                    <div class="balao">
+                        <div class="fw-semibold mb-1">AgendaJá</div>
+                        Olá, Ana! Passando para lembrar do seu horário.<br><br>
+                        Serviço: Corte<br>
+                        Data: 12/10/2026 às 14:00<br>
+                        Local: Barbearia Central, Rua do Comércio, 45<br><br>
+                        Podemos confirmar sua presença? Responda:
+                        <div class="botoes-balao">
+                            <span>CONFIRMAR</span>
+                            <span>CANCELAR</span>
+                        </div>
+                    </div>
+                    <p class="legenda-conversa mb-0">
+                        Mensagem enviada 24 horas antes, sem ninguém digitar.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section class="container py-5">
+    <div class="row g-4 text-center">
+        <div class="col-6 col-lg-3">
+            <div class="numero-pesquisa">11<span>/11</span></div>
+            <p class="text-muted small mb-0">
+                usam WhatsApp para falar com os clientes
+            </p>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="numero-pesquisa">9<span>/11</span></div>
+            <p class="text-muted small mb-0">
+                preferem ser avisados por lá
+            </p>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="numero-pesquisa">10<span>/11</span></div>
+            <p class="text-muted small mb-0">
+                atendem em mais de um local
+            </p>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="numero-pesquisa">11<span>/11</span></div>
+            <p class="text-muted small mb-0">
+                querem receber avaliação do atendimento
+            </p>
+        </div>
+    </div>
+    <p class="text-center text-muted small mt-4 mb-0">
+        Levantamento com 11 profissionais autônomos de áreas diferentes,
+        aplicado durante a pesquisa deste trabalho.
+    </p>
+</section>
+
+
+<section class="secao-clara py-5" id="como-funciona">
+    <div class="container">
+        <h2 class="h3 text-center mb-2">Como funciona</h2>
+        <p class="text-center text-muted mb-5">
+            Quatro toques para o cliente. Nada para ele instalar.
+        </p>
+
+        <div class="row g-4">
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="cartao p-4 h-100">
+                    <div class="passo-numero mb-3">1</div>
+                    <h3 class="h6">Você divulga o link</h3>
+                    <p class="text-muted small mb-0">
+                        No status, na bio, no cartão. Um endereço só,
+                        que é seu.
+                    </p>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="cartao p-4 h-100">
+                    <div class="passo-numero mb-3">2</div>
+                    <h3 class="h6">O cliente escolhe</h3>
+                    <p class="text-muted small mb-0">
+                        Serviço, dia e horário. Só aparecem os horários
+                        que estão livres de verdade.
+                    </p>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="cartao p-4 h-100">
+                    <div class="passo-numero mb-3">3</div>
+                    <h3 class="h6">O sistema avisa os dois</h3>
+                    <p class="text-muted small mb-0">
+                        Confirmação na hora para o cliente, aviso de novo
+                        agendamento para você.
+                    </p>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="cartao p-4 h-100">
+                    <div class="passo-numero mb-3">4</div>
+                    <h3 class="h6">O lembrete sai sozinho</h3>
+                    <p class="text-muted small mb-0">
+                        24 horas antes. O cliente confirma ou cancela
+                        respondendo a mensagem.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section class="container py-5">
+    <h2 class="h3 text-center mb-5">O que o sistema resolve</h2>
+
+    <div class="row g-4">
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="d-flex gap-3">
+                <i class="bi bi-person-x recurso-icone"></i>
+                <div>
+                    <h3 class="h6 mb-1">Falta sem aviso</h3>
+                    <p class="text-muted small mb-0">
+                        Cancelar fica fácil: um link, sem login. O horário
+                        volta a ficar livre a tempo de encaixar outra
+                        pessoa, e você é avisado na hora.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="d-flex gap-3">
+                <i class="bi bi-calendar-x recurso-icone"></i>
+                <div>
+                    <h3 class="h6 mb-1">Dois no mesmo horário</h3>
+                    <p class="text-muted small mb-0">
+                        A agenda não deixa, nem se duas pessoas
+                        confirmarem no mesmo segundo. A trava está no
+                        banco de dados.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="d-flex gap-3">
+                <i class="bi bi-clock-history recurso-icone"></i>
+                <div>
+                    <h3 class="h6 mb-1">Conversa no meio do atendimento</h3>
+                    <p class="text-muted small mb-0">
+                        O cliente marca a qualquer hora, inclusive fora do
+                        expediente, sem interromper quem está na cadeira.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="d-flex gap-3">
+                <i class="bi bi-geo-alt recurso-icone"></i>
+                <div>
+                    <h3 class="h6 mb-1">Mais de um local</h3>
+                    <p class="text-muted small mb-0">
+                        Salão de manhã, domicílio à tarde. Cada janela de
+                        atendimento tem o seu lugar, e o endereço vai
+                        junto no lembrete.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="d-flex gap-3">
+                <i class="bi bi-stars recurso-icone"></i>
+                <div>
+                    <h3 class="h6 mb-1">Qualquer profissão</h3>
+                    <p class="text-muted small mb-0">
+                        A duração é do serviço, não do sistema. Corte de
+                        30 minutos, fisioterapia de 50, tatuagem de quatro
+                        horas — tudo na mesma agenda.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="d-flex gap-3">
+                <i class="bi bi-shield-check recurso-icone"></i>
+                <div>
+                    <h3 class="h6 mb-1">Mensagem com autorização</h3>
+                    <p class="text-muted small mb-0">
+                        O cliente autoriza antes de receber qualquer
+                        mensagem, e sai quando quiser respondendo SAIR.
+                        Conforme a LGPD.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section class="secao-clara py-5">
+    <div class="container text-center">
+        <h2 class="h4 mb-3">Instale no celular</h2>
+        <p class="text-muted mb-0 mx-auto" style="max-width: 46rem;">
+            O AgendaJá funciona como aplicativo: abra no navegador do
+            celular e escolha <strong>adicionar à tela inicial</strong>.
+            Sem loja, sem download, sem ocupar espaço — e o cliente não
+            precisa instalar nada para marcar com você.
+        </p>
+    </div>
+</section>
+
+
+<footer class="rodape-home py-4">
+    <div class="container text-center small">
+        <p class="mb-1 fw-semibold">AgendaJá</p>
+        <p class="mb-0">
+            Trabalho de Conclusão de Curso — Análise e Desenvolvimento de
+            Sistemas<br>
+            Instituto Federal Baiano, Campus Guanambi
+        </p>
+    </div>
+</footer>
+
+{% endblock %}

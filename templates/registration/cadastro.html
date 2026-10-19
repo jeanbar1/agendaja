@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block titulo %}{% if completando %}Completar cadastro{% else %}Criar conta{% endif %} — AgendaJá{% endblock %}
+
+{% block classe_main %}container py-5{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-9 col-lg-7">
+
+        <div class="text-center mb-4">
+            {% if completando %}
+                <h1 class="h4 mb-1">Falta pouco</h1>
+                <p class="text-muted mb-0">
+                    Sua conta foi criada com o Google. O que o Google não
+                    informa, preciso que você complete aqui.
+                </p>
+            {% else %}
+                <div class="display-6 fw-bold text-marca">
+                    <i class="bi bi-calendar2-check"></i> AgendaJá
+                </div>
+                <p class="text-muted mb-0">
+                    Crie sua conta e comece a receber agendamentos pelo link.
+                </p>
+            {% endif %}
+        </div>
+
+        <div class="cartao p-4">
+
+            {% if completando %}
+                <div class="d-flex gap-2 align-items-center mb-4 p-3 rounded"
+                     style="background:#f3f6f6;">
+                    <i class="bi bi-person-check text-marca fs-5"></i>
+                    <div class="small">
+                        Entrou como <strong>{{ user.email }}</strong>
+                    </div>
+                </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                {# A escolha do tipo vem antes de tudo porque ela muda o
+                   resto do formulario. O JS la embaixo so mostra ou
+                   esconde os campos - quem decide de verdade e a view,
+                   pelo campo "tipo". #}
+                <h2 class="h6 mb-3">Você é</h2>
+
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <input type="radio" class="btn-check" name="tipo"
+                               id="tipo_prestador" value="prestador"
+                               {% if tipo != "cliente" %}checked{% endif %}>
+                        <label class="btn btn-outline-secondary w-100 py-3"
+                               for="tipo_prestador">
+                            <i class="bi bi-briefcase d-block fs-4 mb-1"></i>
+                            Presto serviço
+                            <span class="d-block small text-muted">
+                                Quero receber agendamentos
+                            </span>
+                        </label>
+                    </div>
+                    <div class="col-6">
+                        <input type="radio" class="btn-check" name="tipo"
+                               id="tipo_cliente" value="cliente"
+                               {% if tipo == "cliente" %}checked{% endif %}>
+                        <label class="btn btn-outline-secondary w-100 py-3"
+                               for="tipo_cliente">
+                            <i class="bi bi-person d-block fs-4 mb-1"></i>
+                            Sou cliente
+                            <span class="d-block small text-muted">
+                                Quero marcar horário
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <h2 class="h6 mb-3">Sobre você</h2>
+
+                <div class="mb-3">
+                    <label class="form-label small" for="nome">Seu nome</label>
+                    <input type="text" name="nome" id="nome" class="form-control"
+                           maxlength="120" required
+                           placeholder="Marcos Andrade — Barbearia Central"
+                           value="{{ dados.nome|default:'' }}">
+                    <div class="form-text small so-prestador">
+                        É o nome que o cliente vê na sua página de agendamento.
+                        Pode ser o seu, o do negócio, ou os dois.
+                    </div>
+                </div>
+
+                <div class="mb-3 so-prestador">
+                    <label class="form-label small" for="area">Área de atuação</label>
+                    <input type="text" name="area" id="area" class="form-control"
+                           list="lista-areas" maxlength="80" required
+                           placeholder="Barbearia, Fisioterapia, Tatuagem…"
+                           value="{{ dados.area|default:'' }}">
+                    <datalist id="lista-areas">
+                        {% for a in areas %}<option value="{{ a.nome }}"></option>{% endfor %}
+                    </datalist>
+                    <div class="form-text small">
+                        Escolha uma da lista ou escreva a sua — se ainda não
+                        existir, o sistema cria.
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small" for="telefone">Seu WhatsApp</label>
+                    <input type="tel" name="telefone" id="telefone"
+                           class="form-control" required
+                           placeholder="(77) 99999-8888"
+                           value="{{ dados.telefone|default:'' }}">
+                    <div class="form-text small">
+                        É para cá que vêm os avisos de novo agendamento e de
+                        cancelamento.
+                    </div>
+                </div>
+
+                {% if not completando %}
+                    <hr class="my-4">
+                    <h2 class="h6 mb-3">Acesso</h2>
+
+                    <div class="mb-3">
+                        <label class="form-label small" for="email">E-mail</label>
+                        <input type="email" name="email" id="email"
+                               class="form-control" required
+                               placeholder="voce@exemplo.com"
+                               value="{{ dados.email|default:'' }}">
+                    </div>
+
+                    <div class="row g-2 mb-4">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label small" for="senha">Senha</label>
+                            <input type="password" name="senha" id="senha"
+                                   class="form-control" minlength="8" required>
+                            <div class="form-text small">Mínimo de 8 caracteres.</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label small" for="senha2">
+                                Repita a senha
+                            </label>
+                            <input type="password" name="senha2" id="senha2"
+                                   class="form-control" minlength="8" required>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <hr class="my-4 so-prestador">
+
+                <div class="so-prestador">
+                    <h2 class="h6 mb-1">Local de atendimento</h2>
+                    <p class="text-muted small mb-3">
+                        Opcional. Se você atende só a domicílio ou online, pode
+                        deixar em branco.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label small" for="local_nome">Nome do local</label>
+                        <input type="text" name="local_nome" id="local_nome"
+                               class="form-control" maxlength="100"
+                               placeholder="Barbearia Central"
+                               value="{{ dados.local_nome|default:'' }}">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small" for="local_endereco">Endereço</label>
+                        <input type="text" name="local_endereco" id="local_endereco"
+                               class="form-control" maxlength="255"
+                               placeholder="Rua Barão de Macaúbas, 120 — Centro"
+                               value="{{ dados.local_endereco|default:'' }}">
+                        <div class="form-text small">
+                            Vai junto no lembrete, para o cliente saber onde ir.
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-principal w-100 py-2">
+                    {% if completando %}Concluir cadastro{% else %}Criar conta{% endif %}
+                </button>
+            </form>
+        </div>
+
+        {% if not completando %}
+            <p class="text-center text-muted small mt-3 mb-0">
+                Já tem conta? <a href="{% url 'login' %}">Entrar</a>
+            </p>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+
+{% block script_extra %}
+<script>
+// Mostra ou esconde os campos que so o prestador precisa. E conforto
+// visual: mesmo se alguem forcar o envio, a view confere o tipo antes
+// de gravar qualquer coisa.
+(function () {
+    var opcoes = document.querySelectorAll('input[name="tipo"]');
+    if (!opcoes.length) { return; }
+
+    function atualizar() {
+        var ehCliente = document.getElementById("tipo_cliente").checked;
+
+        document.querySelectorAll(".so-prestador").forEach(function (bloco) {
+            bloco.classList.toggle("d-none", ehCliente);
+        });
+
+        // O campo de area e obrigatorio, entao precisa deixar de ser
+        // quando some - senao o navegador recusa enviar o formulario
+        // reclamando de um campo que a pessoa nem ve.
+        var area = document.getElementById("area");
+        if (area) { area.required = !ehCliente; }
+    }
+
+    opcoes.forEach(function (o) { o.addEventListener("change", atualizar); });
+    atualizar();
+})();
+</script>
+{% endblock %}

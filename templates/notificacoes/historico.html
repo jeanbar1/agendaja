@@ -8,24 +8,25 @@
     Mensagens enviadas e programadas para você e para os seus clientes.
 </p>
 
-{% if modo_simulacao %}
-<div class="alert alert-warning">
-    <strong>Modo de simulação.</strong>
-    Nenhum canal de envio está configurado no arquivo <code>.env</code>.
-    As mensagens são registradas como enviadas, mas não saem de fato.
-    O botão <em>Enviar</em> ao lado de cada pendência continua funcionando.
-</div>
-{% else %}
-<div class="alert alert-info py-2 small">
-    Canal ativo: <strong>{{ canal_ativo }}</strong>
+
+{% if atrasadas %}
+<div class="alert alert-warning d-flex flex-wrap gap-3 align-items-center justify-content-between">
+    <div>
+        <strong>Mensagens atrasadas: {{ atrasadas }}.</strong>
+        Já passaram da hora e continuam na fila. Em geral é o WhatsApp
+        desconectado ou o comando de envio que parou de rodar.
+    </div>
+    <a href="{% url 'conexao_whatsapp' %}" class="btn btn-sm btn-principal text-nowrap">
+        <i class="bi bi-whatsapp"></i> Ver a conexão
+    </a>
 </div>
 {% endif %}
 
 <div class="cartao p-3 mb-4">
     <form method="get" class="row g-2 align-items-end">
         <div class="col-8 col-md-4">
-            <label class="form-label small mb-1">Situação</label>
-            <select name="situacao" class="form-select form-select-sm">
+            <label for="situacao" class="form-label small mb-1">Situação</label>
+            <select name="situacao" id="situacao" class="form-select form-select-sm">
                 <option value="">Todas</option>
                 {% for valor, rotulo in situacoes %}
                     <option value="{{ valor }}" {% if situacao == valor %}selected{% endif %}>{{ rotulo }}</option>
@@ -51,7 +52,6 @@
                     <th>Destinatário</th>
                     <th class="d-none d-md-table-cell">Tipo</th>
                     <th>Situação</th>
-                    <th class="d-none d-lg-table-cell">Canal</th>
                     <th class="text-end">Ação</th>
                 </tr>
             </thead>
@@ -85,12 +85,10 @@
                             <span class="selo selo-confirmado">{{ n.get_situacao_display }}</span>
                         {% endif %}
                     </td>
-                    <td class="d-none d-lg-table-cell small text-muted">
-                        {{ n.get_canal_display|default:"—" }}
-                    </td>
+                    
                     <td class="text-end">
                         {% if n.link_manual %}
-                            <a href="{{ n.link_manual }}" target="_blank"
+                            <a href="{{ n.link_manual }}" target="_blank" rel="noopener"
                                class="btn btn-sm btn-outline-success">
                                 <i class="bi bi-whatsapp"></i> Enviar
                             </a>
@@ -99,7 +97,24 @@
                 </tr>
                 {% if n.erro %}
                 <tr>
-                    <td colspan="6" class="small text-danger pt-0 border-0">{{ n.erro }}</td>
+                    {# Em vez de mostrar o JSON cru da Evolution, explico o problema com o nome e o telefone de quem iria receber. O texto tecnico completo fica no title (aparece ao passar o mouse). #}
+                    <td colspan="6" class="small text-danger pt-0 border-0" title="{{ n.erro }}">
+                        <i class="bi bi-exclamation-circle"></i>
+                        {% if 'exists":false' in n.erro %}
+                            Não foi possível enviar o(a) <strong>{{ n.get_tipo_display|lower }}</strong>
+                            para
+                            <strong>{% if n.para_o_profissional %}{{ n.agendamento.profissional.nome_publico }}{% else %}{{ n.agendamento.cliente.nome }}{% endif %}</strong>:
+                            o número <strong>{{ n.telefone }}</strong> não está registrado no WhatsApp.
+                            {% if not n.para_o_profissional %}
+                                Confira o telefone no cadastro do cliente.
+                            {% endif %}
+                        {% else %}
+                            Não foi possível enviar o(a) <strong>{{ n.get_tipo_display|lower }}</strong>
+                            para
+                            <strong>{% if n.para_o_profissional %}{{ n.agendamento.profissional.nome_publico }}{% else %}{{ n.agendamento.cliente.nome }}{% endif %}</strong>
+                            ({{ n.telefone }}). Use o botão Enviar para mandar pelo WhatsApp manualmente.
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endif %}
                 {% endfor %}
@@ -113,11 +128,4 @@
     {% endif %}
 </div>
 
-<p class="small text-muted mt-3">
-    As mensagens são disparadas pelo comando
-    <code>python manage.py enviar_lembretes</code>, executado periodicamente.
-    Só recebem mensagem os clientes com consentimento vigente. O botão
-    <em>Enviar</em> abre o WhatsApp com o texto pronto e não depende de
-    nenhum serviço externo — é o caminho garantido.
-</p>
 {% endblock %}
